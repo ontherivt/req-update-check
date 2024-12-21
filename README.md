@@ -1,5 +1,10 @@
 # req-check
 
+[![Tests](https://github.com/ontherivt/req-check/actions/workflows/tests.yml/badge.svg)](https://github.com/ontherivt/req-check/actions/workflows/tests.yml)
+[![Coverage Status](https://coveralls.io/repos/github/ontherivt/req-check/badge.svg?branch=main)](https://coveralls.io/github/ontherivt/req-check?branch=main)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
+
 A Python tool to check your requirements.txt file for package updates, with optional file caching for better performance.
 
 ## Features
