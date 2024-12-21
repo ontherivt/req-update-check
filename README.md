@@ -27,7 +27,7 @@ pip install req-check
 Or install from source:
 
 ```bash
-git clone https://github.com/yourusername/req-check.git  # todo
+git clone https://github.com/ontherivt/req-check.git
 cd req-check
 pip install -e .
 ```
