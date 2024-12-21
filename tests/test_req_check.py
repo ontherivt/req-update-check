@@ -1,12 +1,10 @@
 import unittest
-from unittest.mock import patch, mock_open, MagicMock
-import json
-import time
-from pathlib import Path
-from src.req_check.cli import main
+from unittest.mock import mock_open
+from unittest.mock import patch
 
-from src.req_check.core import Requirements
 from src.req_check.cache import FileCache
+from src.req_check.cli import main
+from src.req_check.core import Requirements
 
 
 class TestFileCache(unittest.TestCase):
@@ -24,10 +22,10 @@ class TestFileCache(unittest.TestCase):
         self.assertEqual(result, self.test_value)
 
     def test_expired_cache(self):
-        with patch('time.time', return_value=100):
+        with patch("time.time", return_value=100):
             self.cache.set(self.test_key, self.test_value)
 
-        with patch('time.time', return_value=5000):
+        with patch("time.time", return_value=5000):
             result = self.cache.get(self.test_key)
             self.assertIsNone(result)
 
@@ -50,47 +48,47 @@ pytest==6.2.4  # inline comment
             "projects": [
                 {"name": "requests"},
                 {"name": "flask"},
-                {"name": "pytest"}
-            ]
+                {"name": "pytest"},
+            ],
         }
         self.mock_versions = {
-            "versions": ["2.26.0", "2.27.0", "2.28.0"]
+            "versions": ["2.26.0", "2.27.0", "2.28.0"],
         }
 
     @patch.object(Requirements, "get_index")
-    @patch('builtins.open', new_callable=mock_open)
+    @patch("builtins.open", new_callable=mock_open)
     def test_get_packages(self, mock_file, mock_get_index):
-        mock_file.return_value.readlines.return_value = self.req_content.split('\n')
+        mock_file.return_value.readlines.return_value = self.req_content.split("\n")
         req = Requirements("requirements.txt", allow_cache=False)
         expected = [
-            ['requests', '2.26.0'],
-            ['flask', '2.0.1'],
-            ['pytest', '6.2.4']
+            ["requests", "2.26.0"],
+            ["flask", "2.0.1"],
+            ["pytest", "6.2.4"],
         ]
         self.assertEqual(req.packages, expected)
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_index(self, mock_get):
         mock_get.return_value.json.return_value = self.mock_index
-        with patch('builtins.open', new_callable=mock_open) as mock_file:
-            mock_file.return_value.readlines.return_value = self.req_content.split('\n')
+        with patch("builtins.open", new_callable=mock_open) as mock_file:
+            mock_file.return_value.readlines.return_value = self.req_content.split("\n")
             req = Requirements("requirements.txt", allow_cache=False)
             self.assertEqual(req.package_index, {"requests", "flask", "pytest"})
 
     @patch.object(Requirements, "get_index")
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_latest_version(self, mock_get, mock_get_index):
         mock_get.return_value.json.return_value = self.mock_versions
-        with patch('builtins.open', new_callable=mock_open) as mock_file:
-            mock_file.return_value.readlines.return_value = self.req_content.split('\n')
+        with patch("builtins.open", new_callable=mock_open) as mock_file:
+            mock_file.return_value.readlines.return_value = self.req_content.split("\n")
             req = Requirements("requirements.txt", allow_cache=False)
             latest = req.get_latest_version("requests")
             self.assertEqual(latest, "2.28.0")
 
     @patch.object(Requirements, "get_index")
     def test_check_major_minor(self, mock_get_index):
-        with patch('builtins.open', new_callable=mock_open) as mock_file:
-            mock_file.return_value.readlines.return_value = self.req_content.split('\n')
+        with patch("builtins.open", new_callable=mock_open) as mock_file:
+            mock_file.return_value.readlines.return_value = self.req_content.split("\n")
             req = Requirements("requirements.txt", allow_cache=False)
 
             self.assertEqual(req.check_major_minor("1.0.0", "2.0.0"), "major")
@@ -103,43 +101,45 @@ class TestCLI(unittest.TestCase):
         self.req_content = "requests==2.26.0\nflask==2.0.1\n"
         self.requirements_file = "requirements.txt"
 
-    @patch('sys.argv', ['req-check', 'requirements.txt'])
-    @patch('builtins.print')
-    @patch('src.req_check.cli.Requirements')
+    @patch("sys.argv", ["req-check", "requirements.txt"])
+    @patch("builtins.print")
+    @patch("src.req_check.cli.Requirements")
     def test_main_default_args(self, mock_requirements, mock_print):
         mock_instance = mock_requirements.return_value
         main()
         mock_requirements.assert_called_with(
-            'requirements.txt',
+            "requirements.txt",
             allow_cache=True,
-            cache_dir=None
+            cache_dir=None,
         )
         mock_instance.check_packages.assert_called_once()
         mock_instance.report.assert_called_once()
 
-    @patch('sys.argv', ['req-check', 'requirements.txt', '--no-cache'])
-    @patch('builtins.print')
-    @patch('src.req_check.cli.Requirements')
+    @patch("sys.argv", ["req-check", "requirements.txt", "--no-cache"])
+    @patch("builtins.print")
+    @patch("src.req_check.cli.Requirements")
     def test_main_no_cache(self, mock_requirements, mock_print):
-        mock_instance = mock_requirements.return_value
         main()
         mock_requirements.assert_called_with(
-            'requirements.txt',
+            "requirements.txt",
             allow_cache=False,
-            cache_dir=None
+            cache_dir=None,
         )
 
-    @patch('sys.argv', ['req-check', 'requirements.txt', '--cache-dir', '/custom/cache'])
-    @patch('builtins.print')
-    @patch('src.req_check.cli.Requirements')
+    @patch(
+        "sys.argv",
+        ["req-check", "requirements.txt", "--cache-dir", "/custom/cache"],
+    )
+    @patch("builtins.print")
+    @patch("src.req_check.cli.Requirements")
     def test_main_custom_cache_dir(self, mock_requirements, mock_print):
-        mock_instance = mock_requirements.return_value
         main()
         mock_requirements.assert_called_with(
-            'requirements.txt',
+            "requirements.txt",
             allow_cache=True,
-            cache_dir='/custom/cache'
+            cache_dir="/custom/cache",
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

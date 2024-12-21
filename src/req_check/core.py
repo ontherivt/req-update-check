@@ -1,17 +1,34 @@
-import json
+import logging
 import subprocess
 import sys
-from typing import Optional
+from shutil import which
+
 import requests
+
 from .cache import FileCache
+
+logger = logging.getLogger("req_check")
+
+
+def get_pip_path():
+    pip_path = which("pip")
+    if not pip_path:
+        logger.error("pip executable not found")
+        return None
+    return pip_path
 
 
 class Requirements:
     pypi_index = "https://pypi.python.org/simple/"
     pypi_package_base = "https://pypi.python.org/project/"
-    headers = {"Content-Type": "json", 'Accept': 'application/vnd.pypi.simple.v1+json'}
+    headers = {"Content-Type": "json", "Accept": "application/vnd.pypi.simple.v1+json"}
 
-    def __init__(self, path: str, allow_cache: bool = True, cache_dir: Optional[str] = None):
+    def __init__(
+        self,
+        path: str,
+        allow_cache: bool = True,
+        cache_dir: str | None = None,
+    ):
         self.path = path
         self.packages = self.get_packages()
         self.package_index = set()
@@ -29,29 +46,30 @@ class Requirements:
                 self.package_index = set(package_index)
                 return
 
-        res = requests.get(self.pypi_index, headers=self.headers)
-        package_index = res.json()['projects']
+        res = requests.get(self.pypi_index, headers=self.headers, timeout=10)
+        package_index = res.json()["projects"]
         for package in package_index:
-            self.package_index.add(package['name'])
+            self.package_index.add(package["name"])
 
         if self.cache:
             self.cache.set("package-index", list(self.package_index))
 
     def get_packages(self):
         try:
-            with open(self.path, 'r') as file:
+            with open(self.path) as file:
                 requirements = file.readlines()
         except FileNotFoundError:
-            print(f"File {self.path} not found.")
+            msg = f"File {self.path} not found."
+            logger.info(msg)
             sys.exit(1)
 
         packages = []
         for req in requirements:
-            if req.startswith("#") or req == "" or req == "\n":
+            if req.startswith("#") or req in ["", "\n"]:
                 continue
             # remove inline comments
-            req = req.split("#")[0]
-            packages.append(req.strip().split("=="))
+            req_ = req.split("#")[0]
+            packages.append(req_.strip().split("=="))
 
         return packages
 
@@ -61,49 +79,55 @@ class Requirements:
             if latest_version:
                 return latest_version
 
-        res = requests.get(f"{self.pypi_index}{package_name}/", headers=self.headers)
-        versions = res.json()['versions']
+        res = requests.get(f"{self.pypi_index}{package_name}/", headers=self.headers, timeout=10)
+        versions = res.json()["versions"]
         # start from the end and find the first version that is not a pre-release
         for version in reversed(versions):
-            if not any([x in version for x in ["a", "b", "rc"]]):
+            if not any(x in version for x in ["a", "b", "rc"]):
                 if self.cache:
                     self.cache.set(f"package:{package_name}", version)
                 return version
+        return None
 
     def check_packages(self):
+        expected_length = 2
         for package in self.packages:
-            if len(package) == 2:
+            if len(package) == expected_length:
                 package_name, package_version = package
             else:
                 continue
 
             # check if package is in the index
             if package_name not in self.package_index:
-                print(f"Package {package_name} not found in the index.")
+                msg = f"Package {package_name} not found in the index."
+                logger.info(msg)
                 continue
 
             latest_version = self.get_latest_version(package_name)
             if latest_version != package_version:
                 level = self.check_major_minor(package_version, latest_version)
-                self.updates.append((package_name, package_version, latest_version, level))
+                self.updates.append(
+                    (package_name, package_version, latest_version, level),
+                )
 
     def report(self):
         if not self.updates:
-            print("All packages are up to date.")
+            logger.info("All packages are up to date.")
             return
 
-        print("The following packages need to be updated:\n")
+        logger.info("The following packages need to be updated:\n")
         for package in self.updates:
             package_name, current_version, latest_version, level = package
-            print(f"{package_name}: {current_version} -> {latest_version} [{level}]")
-            print(f"    Pypi page: {self.pypi_package_base}{package_name}/")
+            msg = f"{package_name}: {current_version} -> {latest_version} [{level}]"
+            msg += f"\n\tPypi page: {self.pypi_package_base}{package_name}/"
             links = self.get_package_info(package_name)
             if links:
                 if links.get("homepage"):
-                    print(f"    Homepage: {links['homepage']}")
+                    msg += f"\n\tHomepage: {links['homepage']}"
                 if links.get("changelog"):
-                    print(f"    Changelog: {links['changelog']}")
-            print()
+                    msg += f"\n\tChangelog: {links['changelog']}"
+            msg += "\n"
+            logger.info(msg)
 
     def get_package_info(self, package_name: str) -> dict:
         """Get package information using pip show command."""
@@ -111,28 +135,33 @@ class Requirements:
             info = self.cache.get(f"package-info:{package_name}")
             if info:
                 return info
+        pip_path = get_pip_path()
+        if not pip_path:
+            return {}
         try:
+            # ruff: noqa: S603
             result = subprocess.run(
-                ['pip', 'show', package_name, '--verbose'],
+                [pip_path, "show", package_name, "--verbose"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
 
             info = {}
 
-            for line in result.stdout.split('\n'):
+            for line in result.stdout.split("\n"):
                 if "Home-page: " in line:
-                    info['homepage'] = line.split(': ', 1)[1].strip()
+                    info["homepage"] = line.split(": ", 1)[1].strip()
 
                 if "Changelog," in line or "change-log, " in line.lower():
-                    info['changelog'] = line.split(', ', 1)[1].strip()
+                    info["changelog"] = line.split(", ", 1)[1].strip()
 
                 if "Homepage, " in line:
-                    info['homepage'] = line.split(', ', 1)[1].strip()
+                    info["homepage"] = line.split(", ", 1)[1].strip()
             if self.cache:
                 self.cache.set(f"package-info:{package_name}", info)
-            return info
+            else:
+                return info
         except subprocess.CalledProcessError:
             return {}
 
@@ -145,4 +174,3 @@ class Requirements:
         if current_minor != latest_minor:
             return "minor"
         return "patch"
-

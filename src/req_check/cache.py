@@ -1,7 +1,7 @@
 import json
 import time
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
 
 class FileCache:
@@ -16,14 +16,14 @@ class FileCache:
         self.cache_dir.mkdir(exist_ok=True)
         self.expiry = expiry
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache if it exists and hasn't expired."""
         cache_file = self.cache_dir / f"{key}.json"
         if cache_file.exists():
             try:
                 data = json.loads(cache_file.read_text())
-                if data['timestamp'] + self.expiry > time.time():
-                    return data['value']
+                if data["timestamp"] + self.expiry > time.time():
+                    return data["value"]
                 # Clean up expired cache
                 cache_file.unlink(missing_ok=True)
             except (json.JSONDecodeError, KeyError):
@@ -35,8 +35,8 @@ class FileCache:
         """Save value to cache with current timestamp."""
         cache_file = self.cache_dir / f"{key}.json"
         data = {
-            'timestamp': time.time(),
-            'value': value
+            "timestamp": time.time(),
+            "value": value,
         }
         cache_file.write_text(json.dumps(data))
 

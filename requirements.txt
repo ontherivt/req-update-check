@@ -1,2 +1,6 @@
 requests==2.32.3
+
+# dev + testing
 coverage
+ruff
+pre-commit
