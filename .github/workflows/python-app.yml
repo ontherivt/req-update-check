@@ -33,5 +33,7 @@ jobs:
           coverage run -m unittest discover
           coverage report
           coverage xml
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      - name: Submit to Coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: coveralls --service=github
