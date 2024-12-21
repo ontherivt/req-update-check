@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "req-check"
+version = "0.1.0"
+description = "Check Python package requirements for updates"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "PJ Hoberman", email = "phoberman@outsideinc.com" }
+]
+dependencies = [
+    "requests>=2.31.0"
+]
+
+[project.scripts]
+req-check = "req_check.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/req_check"]
