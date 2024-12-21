@@ -7,7 +7,7 @@ name = "req-check"
 version = "0.1.0"
 description = "Check Python package requirements for updates"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 license = "MIT"
 authors = [
     { name = "PJ Hoberman", email = "phoberman@outsideinc.com" }
