@@ -2,6 +2,7 @@ import argparse
 
 from .core import Requirements
 
+
 def main():
     parser = argparse.ArgumentParser(description='Check Python package requirements for updates.')
     parser.add_argument('requirements_file', help='Path to the requirements.txt file')
@@ -21,7 +22,6 @@ def main():
     )
     req.check_packages()
     req.report()
-
 
 
 if __name__ == "__main__":
