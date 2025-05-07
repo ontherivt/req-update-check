@@ -3,7 +3,7 @@ import sys
 
 
 def setup_logging(level=logging.INFO):
-    logger = logging.getLogger("req_cheq")
+    logger = logging.getLogger("req_update_check")
     logger.setLevel(level)
 
     # Console handler

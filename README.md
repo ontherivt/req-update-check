@@ -1,7 +1,7 @@
-# req-cheq
+# req-update-check
 
-[![Tests](https://github.com/ontherivt/req-cheq/actions/workflows/tests.yml/badge.svg)](https://github.com/ontherivt/req-cheq/actions/workflows/tests.yml)
-[![Coverage Status](https://coveralls.io/repos/github/ontherivt/req-cheq/badge.svg?branch=main&t=PPro1K)](https://coveralls.io/github/ontherivt/req-cheq?branch=main)
+[![Tests](https://github.com/ontherivt/req-update-check/actions/workflows/tests.yml/badge.svg)](https://github.com/ontherivt/req-update-check/actions/workflows/tests.yml)
+[![Coverage Status](https://coveralls.io/repos/github/ontherivt/req-update-check/badge.svg?branch=main&t=PPro1K)](https://coveralls.io/github/ontherivt/req-update-check?branch=main)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 
@@ -21,20 +21,20 @@ A Python tool to check your requirements.txt file for package updates, with opti
 Install from PyPI: (Note: This isn't published yet)
 
 ```bash
-pip install req-cheq
+pip install req-update-check
 ```
 
 Or install from the private repo directly:
 
 ```bash
-pip install git+https://github.com/ontherivt/req-cheq.git
+pip install git+https://github.com/ontherivt/req-update-check.git
 ```
 
 Or install from source:
 
 ```bash
-git clone https://github.com/ontherivt/req-cheq.git
-cd req-cheq
+git clone https://github.com/ontherivt/req-update-check.git
+cd req-update-check
 pip install -e .
 ```
 
@@ -43,13 +43,13 @@ pip install -e .
 Basic usage:
 
 ```bash
-req-cheq requirements.txt
+req-update-check requirements.txt
 ```
 
 ### Command Line Options
 
 ```bash
-req-cheq [-h] [--no-cache] [--cache-dir CACHE_DIR] requirements_file
+req-update-check [-h] [--no-cache] [--cache-dir CACHE_DIR] requirements_file
 ```
 
 Arguments:
@@ -57,7 +57,7 @@ Arguments:
 
 Options:
 - `--no-cache`: Disable file caching
-- `--cache-dir`: Custom cache directory (default: `~/.req-cheq-cache`)
+- `--cache-dir`: Custom cache directory (default: `~/.req-update-check-cache`)
 
 ### Example Output
 
@@ -81,7 +81,7 @@ redis: 4.5.0 -> 5.0.1 [major]
 The tool supports file caching to improve performance when checking multiple times. You can configure the cache storage:
 
 ```bash
-req-cheq --cache-dir ~/.your-cache-dir requirements.txt
+req-update-check --cache-dir ~/.your-cache-dir requirements.txt
 ```
 
 ## Requirements.txt Format
@@ -98,10 +98,10 @@ Note: Currently only supports exact version specifiers (`==`). Support for other
 
 ## Python API
 
-You can also use req-cheq as a Python library:
+You can also use req-update-check as a Python library:
 
 ```python
-from req_cheq import Requirements
+from req_update_check import Requirements
 
 # Without file cache
 req = Requirements('requirements.txt', allow_cache=False)

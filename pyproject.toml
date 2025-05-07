@@ -3,7 +3,7 @@ requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "req-cheq"
+name = "req-update-check"
 version = "0.1.1"
 description = "Check Python package requirements for updates"
 readme = "README.md"
@@ -18,14 +18,14 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://github.com/ontherivt/req-cheq"
-issues = "https://github.com/ontherivt/req-cheq/issues"
+homepage = "https://github.com/ontherivt/req-update-check"
+issues = "https://github.com/ontherivt/req-update-check/issues"
 
 [project.scripts]
-req-cheq = "req_cheq.cli:main"
+req-update-check = "req_update_check.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/req_cheq"]
+packages = ["src/req_update_check"]
 
 # ==== Coverage ====
 [tool.coverage.run]
