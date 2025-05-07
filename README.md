@@ -18,13 +18,13 @@ A Python tool to check your requirements.txt file for package updates, with opti
 
 ## Installation
 
-Install from PyPI: (Note: This isn't published yet)
+Install from PyPI:
 
 ```bash
 pip install req-update-check
 ```
 
-Or install from the private repo directly:
+Or install from the repo directly:
 
 ```bash
 pip install git+https://github.com/ontherivt/req-update-check.git
