@@ -123,6 +123,9 @@ To set up for development:
 3. Activate the virtual environment: `source venv/bin/activate` (Unix) or `venv\Scripts\activate` (Windows)
 4. Install development dependencies: `pip install -e ".[dev]"`
 
+To run tests:
+1. `python -m unittest`
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

@@ -55,6 +55,8 @@ pytest==6.2.4  # inline comment
             "versions": ["2.26.0", "2.27.0", "2.28.0"],
         }
 
+        self.requirements = Requirements("requirements.txt", allow_cache=False)
+
     @patch.object(Requirements, "get_index")
     @patch("builtins.open", new_callable=mock_open)
     def test_get_packages(self, mock_file, mock_get_index):
@@ -94,6 +96,18 @@ pytest==6.2.4  # inline comment
             self.assertEqual(req.check_major_minor("1.0.0", "2.0.0"), "major")
             self.assertEqual(req.check_major_minor("1.0.0", "1.1.0"), "minor")
             self.assertEqual(req.check_major_minor("1.0.0", "1.0.1"), "patch")
+
+    def test_optional_dependencies(self):
+        package = ["psycopg2[binary]", "2.9.1"]
+        with self.assertLogs("req_check", level="INFO") as cm:
+            self.requirements.check_package(package)
+        self.assertIn("Skipping optional packages 'binary' from psycopg2", cm.output[0])
+
+        package = ["psycopg2", "2.9.1"]
+        with self.assertLogs("req_check", level="INFO") as cm:
+            self.requirements.check_package(package)
+
+        self.assertNotIn("Skipping optional packages", cm.output[0])
 
 
 class TestCLI(unittest.TestCase):
