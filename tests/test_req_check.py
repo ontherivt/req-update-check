@@ -55,11 +55,14 @@ pytest==6.2.4  # inline comment
             "versions": ["2.26.0", "2.27.0", "2.28.0"],
         }
 
+        self.requirements = Requirements("requirements.txt", allow_cache=False)
+
     @patch.object(Requirements, "get_index")
     @patch("builtins.open", new_callable=mock_open)
     def test_get_packages(self, mock_file, mock_get_index):
         mock_file.return_value.readlines.return_value = self.req_content.split("\n")
         req = Requirements("requirements.txt", allow_cache=False)
+        req.check_packages()
         expected = [
             ["requests", "2.26.0"],
             ["flask", "2.0.1"],
@@ -69,10 +72,11 @@ pytest==6.2.4  # inline comment
 
     @patch("requests.get")
     def test_get_index(self, mock_get):
-        mock_get.return_value.json.return_value = self.mock_index
+        mock_get.return_value.json.side_effect = [self.mock_index] + [self.mock_versions] * 3
         with patch("builtins.open", new_callable=mock_open) as mock_file:
             mock_file.return_value.readlines.return_value = self.req_content.split("\n")
             req = Requirements("requirements.txt", allow_cache=False)
+            req.check_packages()
             self.assertEqual(req.package_index, {"requests", "flask", "pytest"})
 
     @patch.object(Requirements, "get_index")
@@ -94,6 +98,18 @@ pytest==6.2.4  # inline comment
             self.assertEqual(req.check_major_minor("1.0.0", "2.0.0"), "major")
             self.assertEqual(req.check_major_minor("1.0.0", "1.1.0"), "minor")
             self.assertEqual(req.check_major_minor("1.0.0", "1.0.1"), "patch")
+
+    def test_optional_dependencies(self):
+        package = ["psycopg2[binary]", "2.9.1"]
+        with self.assertLogs("req_check", level="INFO") as cm:
+            self.requirements.check_package(package)
+        self.assertIn("Skipping optional packages 'binary' from psycopg2", cm.output[0])
+
+        package = ["psycopg2", "2.9.1"]
+        with self.assertLogs("req_check", level="INFO") as cm:
+            self.requirements.check_package(package)
+
+        self.assertNotIn("Skipping optional packages", cm.output[0])
 
 
 class TestCLI(unittest.TestCase):

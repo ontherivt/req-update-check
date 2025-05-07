@@ -31,17 +31,21 @@ class Requirements:
         allow_cache: bool = True,
         cache_dir: str | None = None,
     ):
+        self._index = False
+        self._get_packages = False
+
         self.path = path
-        self.packages = self.get_packages()
+        self.packages = None
         self.package_index = set()
         self.allow_cache = allow_cache
         self.updates = []
         cache_dir = cache_dir or ".req-check-cache"
         self.cache = FileCache(cache_dir) if allow_cache else None
 
-        self.get_index()
-
     def get_index(self):
+        if self._index:
+            return
+        self._index = True
         if self.allow_cache and self.cache:
             package_index = self.cache.get("package-index")
             if package_index:
@@ -57,6 +61,10 @@ class Requirements:
             self.cache.set("package-index", list(self.package_index))
 
     def get_packages(self):
+        if self._get_packages:
+            return None
+        self._get_packages = True
+        self.get_index()
         try:
             with open(self.path) as file:
                 requirements = file.readlines()
@@ -73,6 +81,7 @@ class Requirements:
             req_ = req.split("#")[0]
             packages.append(req_.strip().split("=="))
 
+        self.packages = packages
         return packages
 
     def get_latest_version(self, package_name):
@@ -92,25 +101,34 @@ class Requirements:
         return None
 
     def check_packages(self):
-        expected_length = 2
+        self.get_packages()
         for package in self.packages:
-            if len(package) == expected_length:
-                package_name, package_version = package
-            else:
-                continue
+            self.check_package(package)
 
-            # check if package is in the index
-            if package_name not in self.package_index:
-                msg = f"Package {package_name} not found in the index."
-                logger.info(msg)
-                continue
+    def check_package(self, package: list[str, str]):
+        expected_length = 2
+        if len(package) == expected_length:
+            package_name, package_version = package
+        else:
+            return
 
-            latest_version = self.get_latest_version(package_name)
-            if latest_version != package_version:
-                level = self.check_major_minor(package_version, latest_version)
-                self.updates.append(
-                    (package_name, package_version, latest_version, level),
-                )
+        # check for optional dependencies
+        if "[" in package_name:
+            package_name, optional_deps = package_name.split("[")
+            logger.info(f"Skipping optional packages '{optional_deps.replace(']', '')}' from {package_name}")
+
+        # check if package is in the index
+        if package_name not in self.package_index:
+            msg = f"Package {package_name} not found in the index."
+            logger.info(msg)
+            return
+
+        latest_version = self.get_latest_version(package_name)
+        if latest_version != package_version:
+            level = self.check_major_minor(package_version, latest_version)
+            self.updates.append(
+                (package_name, package_version, latest_version, level),
+            )
 
     def report(self):
         if not self.updates:
