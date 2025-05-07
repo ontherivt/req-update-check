@@ -6,7 +6,7 @@ import logging
 from .core import Requirements
 from .logging_config import setup_logging
 
-logger = logging.getLogger("req_check")
+logger = logging.getLogger("req_update_check")
 
 
 def main():

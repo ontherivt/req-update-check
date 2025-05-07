@@ -5,3 +5,5 @@ coverage
 ruff
 pre-commit
 coveralls
+build
+twine
