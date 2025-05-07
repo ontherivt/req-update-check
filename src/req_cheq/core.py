@@ -9,7 +9,7 @@ import requests
 
 from .cache import FileCache
 
-logger = logging.getLogger("req_check")
+logger = logging.getLogger("req_cheq")
 
 
 def get_pip_path():

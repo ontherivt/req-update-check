@@ -2,9 +2,9 @@ import unittest
 from unittest.mock import mock_open
 from unittest.mock import patch
 
-from src.req_check.cache import FileCache
-from src.req_check.cli import main
-from src.req_check.core import Requirements
+from src.req_cheq.cache import FileCache
+from src.req_cheq.cli import main
+from src.req_cheq.core import Requirements
 
 
 class TestFileCache(unittest.TestCase):
@@ -101,12 +101,12 @@ pytest==6.2.4  # inline comment
 
     def test_optional_dependencies(self):
         package = ["psycopg2[binary]", "2.9.1"]
-        with self.assertLogs("req_check", level="INFO") as cm:
+        with self.assertLogs("req_cheq", level="INFO") as cm:
             self.requirements.check_package(package)
         self.assertIn("Skipping optional packages 'binary' from psycopg2", cm.output[0])
 
         package = ["psycopg2", "2.9.1"]
-        with self.assertLogs("req_check", level="INFO") as cm:
+        with self.assertLogs("req_cheq", level="INFO") as cm:
             self.requirements.check_package(package)
 
         self.assertNotIn("Skipping optional packages", cm.output[0])
@@ -119,7 +119,7 @@ class TestCLI(unittest.TestCase):
 
     @patch("sys.argv", ["req-check", "requirements.txt"])
     @patch("builtins.print")
-    @patch("src.req_check.cli.Requirements")
+    @patch("src.req_cheq.cli.Requirements")
     def test_main_default_args(self, mock_requirements, mock_print):
         mock_instance = mock_requirements.return_value
         main()
@@ -133,7 +133,7 @@ class TestCLI(unittest.TestCase):
 
     @patch("sys.argv", ["req-check", "requirements.txt", "--no-cache"])
     @patch("builtins.print")
-    @patch("src.req_check.cli.Requirements")
+    @patch("src.req_cheq.cli.Requirements")
     def test_main_no_cache(self, mock_requirements, mock_print):
         main()
         mock_requirements.assert_called_with(
@@ -147,7 +147,7 @@ class TestCLI(unittest.TestCase):
         ["req-check", "requirements.txt", "--cache-dir", "/custom/cache"],
     )
     @patch("builtins.print")
-    @patch("src.req_check.cli.Requirements")
+    @patch("src.req_cheq.cli.Requirements")
     def test_main_custom_cache_dir(self, mock_requirements, mock_print):
         main()
         mock_requirements.assert_called_with(

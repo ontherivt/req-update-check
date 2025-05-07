@@ -1,14 +1,15 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "req-check"
-version = "0.1.0"
+name = "req-cheq"
+version = "0.1.1"
 description = "Check Python package requirements for updates"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "PJ Hoberman", email = "phoberman@outsideinc.com" }
 ]
@@ -16,11 +17,15 @@ dependencies = [
     "requests>=2.31.0"
 ]
 
+[project.urls]
+homepage = "https://github.com/ontherivt/req-cheq"
+issues = "https://github.com/ontherivt/req-cheq/issues"
+
 [project.scripts]
-req-check = "req_check.cli:main"
+req-cheq = "req_cheq.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/req_check"]
+packages = ["src/req_cheq"]
 
 # ==== Coverage ====
 [tool.coverage.run]
