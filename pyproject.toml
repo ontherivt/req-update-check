@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "req-update-check"
-version = "0.1.1"
+version = "0.1.2"
 description = "Check Python package requirements for updates"
 readme = "README.md"
 requires-python = ">=3.8"
