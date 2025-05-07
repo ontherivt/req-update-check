@@ -62,6 +62,7 @@ pytest==6.2.4  # inline comment
     def test_get_packages(self, mock_file, mock_get_index):
         mock_file.return_value.readlines.return_value = self.req_content.split("\n")
         req = Requirements("requirements.txt", allow_cache=False)
+        req.check_packages()
         expected = [
             ["requests", "2.26.0"],
             ["flask", "2.0.1"],
@@ -71,10 +72,11 @@ pytest==6.2.4  # inline comment
 
     @patch("requests.get")
     def test_get_index(self, mock_get):
-        mock_get.return_value.json.return_value = self.mock_index
+        mock_get.return_value.json.side_effect = [self.mock_index] + [self.mock_versions] * 3
         with patch("builtins.open", new_callable=mock_open) as mock_file:
             mock_file.return_value.readlines.return_value = self.req_content.split("\n")
             req = Requirements("requirements.txt", allow_cache=False)
+            req.check_packages()
             self.assertEqual(req.package_index, {"requests", "flask", "pytest"})
 
     @patch.object(Requirements, "get_index")
