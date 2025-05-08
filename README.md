@@ -1,7 +1,7 @@
 # req-update-check
 
 [![Tests](https://github.com/ontherivt/req-update-check/actions/workflows/tests.yml/badge.svg)](https://github.com/ontherivt/req-update-check/actions/workflows/tests.yml)
-[![Coverage Status](https://coveralls.io/repos/github/ontherivt/req-update-check/badge.svg?branch=main&t=PPro1K)](https://coveralls.io/github/ontherivt/req-update-check?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/ontherivt/req-update-check/badge.svg?branch=main&t=unEUVF)](https://coveralls.io/github/ontherivt/req-update-check?branch=main)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 
