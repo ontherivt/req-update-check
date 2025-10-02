@@ -55,6 +55,8 @@ req-update-check [-h] [--no-cache] [--cache-dir CACHE_DIR] requirements_file
 Arguments:
 - `requirements_file`: Path to your requirements.txt file
 
+_Note: You can also provide a pyproject.toml file, but only if you're using python 3.11+._
+
 Options:
 - `--no-cache`: Disable file caching
 - `--cache-dir`: Custom cache directory (default: `~/.req-update-check-cache`)

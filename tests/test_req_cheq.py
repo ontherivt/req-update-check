@@ -1,7 +1,10 @@
+import importlib
+import sys
 import unittest
 from unittest.mock import mock_open
 from unittest.mock import patch
 
+from src.req_update_check import core
 from src.req_update_check.cache import FileCache
 from src.req_update_check.cli import main
 from src.req_update_check.core import Requirements
@@ -44,6 +47,19 @@ flask==2.0.1
 # comment line
 pytest==6.2.4  # inline comment
 """
+        self.toml_content = """
+[project]
+dependencies = [
+    "requests==2.26.0",
+    "flask==2.0.1",
+]
+
+[dependency-groups]
+group1 = ["pytest==6.2.4"]
+group2 = ["numpy==1.21.0"]
+
+"""
+
         self.mock_index = {
             "projects": [
                 {"name": "requests"},
@@ -69,6 +85,40 @@ pytest==6.2.4  # inline comment
             ["pytest", "6.2.4"],
         ]
         self.assertEqual(req.packages, expected)
+
+    @unittest.skipIf(sys.version_info < (3, 11), "Test requires Python 3.11 or newer")
+    @patch.object(Requirements, "get_index")
+    @patch("builtins.open", new_callable=mock_open)
+    def test_get_packages__toml(self, mock_file, mock_get_index):
+        mock_file.return_value.read.return_value = self.toml_content.encode("utf-8")
+        req = Requirements("pyproject.toml", allow_cache=False)
+        req.check_packages()
+        expected = [
+            ["requests", "2.26.0"],
+            ["flask", "2.0.1"],
+            ["pytest", "6.2.4"],
+            ["numpy", "1.21.0"],
+        ]
+        self.assertEqual(req.packages, expected)
+
+    def test_get_packages__toml__before_python_311(self):
+        # Make tomllib "unavailable" and reload so TOMLLIB is recomputed.
+        with patch.dict(sys.modules, {"tomllib": None}):
+            importlib.reload(core)
+            self.assertFalse(core.TOMLLIB, "Expected TOMLLIB to be False after reload")
+
+            # Patch *after* reload, and patch the class on the reloaded module.
+            with (
+                patch.object(core.Requirements, "get_index"),
+                patch("builtins.open", new_callable=mock_open) as mock_file,
+            ):
+                with self.assertRaises(SystemExit) as cm:
+                    # IMPORTANT: call the reloaded class
+                    req = core.Requirements("pyproject.toml", allow_cache=False)
+                    req.check_packages()
+
+                self.assertEqual(cm.exception.code, 1)
+                mock_file.assert_not_called()
 
     @patch("requests.get")
     def test_get_index(self, mock_get):

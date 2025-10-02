@@ -11,6 +11,13 @@ from .cache import FileCache
 
 logger = logging.getLogger("req_update_check")
 
+try:
+    import tomllib
+
+    TOMLLIB = True
+except ModuleNotFoundError:
+    TOMLLIB = False
+
 
 def get_pip_path():
     pip_path = which("pip")
@@ -66,8 +73,26 @@ class Requirements:
         self._get_packages = True
         self.get_index()
         try:
-            with open(self.path) as file:
-                requirements = file.readlines()
+            # if it's a toml file, we should handle it differently
+            if self.path.endswith(".toml"):
+                if not TOMLLIB:
+                    msg = "tomllib is not available before python 3.11, cannot parse pyproject.toml files."
+                    logger.info(msg)
+                    sys.exit(1)
+                with open(self.path, "rb") as f:
+                    file_data = tomllib.load(f)
+                    if "project" not in file_data or "dependencies" not in file_data["project"]:
+                        msg = f"File {self.path} is not a valid pyproject.toml file."
+                        logger.info(msg)
+                        sys.exit(1)
+                    requirements = file_data["project"]["dependencies"]
+                    # also grab dependency groups
+                    if "dependency-groups" in file_data:
+                        for reqs in file_data["dependency-groups"].values():
+                            requirements.extend(reqs)
+            else:
+                with open(self.path) as file:
+                    requirements = file.readlines()
         except FileNotFoundError:
             msg = f"File {self.path} not found."
             logger.info(msg)
@@ -186,8 +211,8 @@ class Requirements:
             return {}
 
     def check_major_minor(self, current_version, latest_version):
-        current_major, current_minor, current_patch, *_ = current_version.split(".") + ["0"] * 3
-        latest_major, latest_minor, latest_patch, *_ = latest_version.split(".") + ["0"] * 3
+        current_major, current_minor, _current_patch, *_ = current_version.split(".") + ["0"] * 3
+        latest_major, latest_minor, _latest_patch, *_ = latest_version.split(".") + ["0"] * 3
 
         if current_major != latest_major:
             return "major"
