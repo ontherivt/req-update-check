@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import mock_open
 from unittest.mock import patch
 
+from src.req_update_check import core
 from src.req_update_check.cache import FileCache
 from src.req_update_check.cli import main
 from src.req_update_check.core import Requirements
@@ -100,8 +101,6 @@ group2 = ["numpy==1.21.0"]
         self.assertEqual(req.packages, expected)
 
     def test_get_packages__toml__before_python_311(self):
-        from src.req_update_check import core
-
         # Make tomllib "unavailable" and reload so TOMLLIB is recomputed.
         with patch.dict(sys.modules, {"tomllib": None}):
             importlib.reload(core)
