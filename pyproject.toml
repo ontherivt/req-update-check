@@ -107,6 +107,7 @@ ignore = [
     "FBT002",
     "PTH123",
     "G004",  # use of f-string in log statements
+    "PT027",  # use pytest.raises
 ]
 # The fixes in extend-unsafe-fixes will require
 # provide the `--unsafe-fixes` flag when fixing.

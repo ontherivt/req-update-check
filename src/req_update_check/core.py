@@ -6,11 +6,17 @@ import sys
 from shutil import which
 
 import requests
-import tomllib
 
 from .cache import FileCache
 
 logger = logging.getLogger("req_update_check")
+
+try:
+    import tomllib
+
+    TOMLLIB = True
+except ModuleNotFoundError:
+    TOMLLIB = False
 
 
 def get_pip_path():
@@ -69,6 +75,10 @@ class Requirements:
         try:
             # if it's a toml file, we should handle it differently
             if self.path.endswith(".toml"):
+                if not TOMLLIB:
+                    msg = "tomllib is not available before python 3.11, cannot parse pyproject.toml files."
+                    logger.info(msg)
+                    sys.exit(1)
                 with open(self.path, "rb") as f:
                     file_data = tomllib.load(f)
                     if "project" not in file_data or "dependencies" not in file_data["project"]:
