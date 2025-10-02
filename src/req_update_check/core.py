@@ -6,6 +6,7 @@ import sys
 from shutil import which
 
 import requests
+import tomllib
 
 from .cache import FileCache
 
@@ -66,8 +67,18 @@ class Requirements:
         self._get_packages = True
         self.get_index()
         try:
-            with open(self.path) as file:
-                requirements = file.readlines()
+            # if it's a toml file, we should handle it differently
+            if self.path.endswith(".toml"):
+                with open(self.path, "rb") as f:
+                    file_data = tomllib.load(f)
+                    if "project" not in file_data or "dependencies" not in file_data["project"]:
+                        msg = f"File {self.path} is not a valid pyproject.toml file."
+                        logger.info(msg)
+                        sys.exit(1)
+                    requirements = file_data["project"]["dependencies"]
+            else:
+                with open(self.path) as file:
+                    requirements = file.readlines()
         except FileNotFoundError:
             msg = f"File {self.path} not found."
             logger.info(msg)
