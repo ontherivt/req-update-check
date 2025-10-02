@@ -86,6 +86,7 @@ group2 = ["numpy==1.21.0"]
         ]
         self.assertEqual(req.packages, expected)
 
+    @unittest.skipIf(sys.version_info < (3, 11), "Test requires Python 3.11 or newer")
     @patch.object(Requirements, "get_index")
     @patch("builtins.open", new_callable=mock_open)
     def test_get_packages__toml(self, mock_file, mock_get_index):
