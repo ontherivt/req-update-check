@@ -76,6 +76,10 @@ class Requirements:
                         logger.info(msg)
                         sys.exit(1)
                     requirements = file_data["project"]["dependencies"]
+                    # also grab dependency groups
+                    if "dependency-groups" in file_data:
+                        for reqs in file_data["dependency-groups"].values():
+                            requirements.extend(reqs)
             else:
                 with open(self.path) as file:
                     requirements = file.readlines()
