@@ -202,7 +202,7 @@ class Requirements:
 
     def check_major_minor(self, current_version, latest_version):
         current_major, current_minor, current_patch, *_ = current_version.split(".") + ["0"] * 3
-        latest_major, latest_minor, latest_patch, *_ = latest_version.split(".") + ["0"] * 3
+        latest_major, latest_minor, _latest_patch, *_ = latest_version.split(".") + ["0"] * 3
 
         if current_major != latest_major:
             return "major"
