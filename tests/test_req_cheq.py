@@ -44,6 +44,19 @@ flask==2.0.1
 # comment line
 pytest==6.2.4  # inline comment
 """
+        self.toml_content = """
+[project]
+dependencies = [
+    "requests==2.26.0",
+    "flask==2.0.1",
+]
+
+[dependency-groups]
+group1 = ["pytest==6.2.4"]
+group2 = ["numpy==1.21.0"]
+
+"""
+
         self.mock_index = {
             "projects": [
                 {"name": "requests"},
@@ -67,6 +80,20 @@ pytest==6.2.4  # inline comment
             ["requests", "2.26.0"],
             ["flask", "2.0.1"],
             ["pytest", "6.2.4"],
+        ]
+        self.assertEqual(req.packages, expected)
+
+    @patch.object(Requirements, "get_index")
+    @patch("builtins.open", new_callable=mock_open)
+    def test_get_packages__toml(self, mock_file, mock_get_index):
+        mock_file.return_value.read.return_value = self.toml_content.encode("utf-8")
+        req = Requirements("pyproject.toml", allow_cache=False)
+        req.check_packages()
+        expected = [
+            ["requests", "2.26.0"],
+            ["flask", "2.0.1"],
+            ["pytest", "6.2.4"],
+            ["numpy", "1.21.0"],
         ]
         self.assertEqual(req.packages, expected)
 
