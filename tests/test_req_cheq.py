@@ -1,6 +1,7 @@
 import importlib
 import sys
 import unittest
+from unittest.mock import Mock
 from unittest.mock import mock_open
 from unittest.mock import patch
 
@@ -258,6 +259,68 @@ class TestCLI(unittest.TestCase):
             cache_dir="/custom/cache",
             ai_provider=None,
         )
+
+
+class TestRequirementsWithAI(unittest.TestCase):
+    """Tests for Requirements with AI analyzer integration"""
+
+    @patch("requests.get")
+    def test_analyze_update_with_ai_success(self, mock_get):
+        """Test AI analysis of package update"""
+        # Mock provider
+        mock_provider = Mock()
+        mock_result = Mock()
+        mock_result.safety = "safe"
+        mock_result.summary = "Safe to update"
+        mock_provider.analyze.return_value = mock_result
+
+        req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
+
+        # Mock the private method
+        result = req._analyze_update_with_ai(
+            package_name="requests",
+            current_version="1.0.0",
+            latest_version="2.0.0",
+            update_level="major",
+            package_info={"changelog": "https://example.com/changelog"},
+        )
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result.safety, "safe")
+
+    @patch("requests.get")
+    def test_analyze_update_with_ai_failure(self, mock_get):
+        """Test AI analysis handles errors gracefully"""
+        # Mock provider that raises exception
+        mock_provider = Mock()
+        mock_provider.analyze.side_effect = Exception("AI Error")
+
+        req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
+
+        # Should return None on error, not raise
+        result = req._analyze_update_with_ai(
+            package_name="requests",
+            current_version="1.0.0",
+            latest_version="2.0.0",
+            update_level="major",
+            package_info={},
+        )
+
+        self.assertIsNone(result)
+
+    def test_requirements_initializes_ai_analyzer(self):
+        """Test that Requirements initializes AI analyzer when provider given"""
+        mock_provider = Mock()
+        req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
+
+        self.assertIsNotNone(req.ai_analyzer)
+        self.assertEqual(req.ai_analyzer.provider, mock_provider)
+
+    def test_requirements_no_ai_analyzer_without_provider(self):
+        """Test that Requirements doesn't create AI analyzer without provider"""
+        req = Requirements("requirements.txt", allow_cache=False, ai_provider=None)
+
+        self.assertIsNone(req.ai_analyzer)
 
 
 if __name__ == "__main__":
