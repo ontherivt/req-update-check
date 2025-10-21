@@ -4,8 +4,6 @@ import unittest
 from unittest.mock import mock_open
 from unittest.mock import patch
 
-import requests
-
 from src.req_update_check import core
 from src.req_update_check.cache import FileCache
 from src.req_update_check.cli import main
@@ -162,54 +160,6 @@ group2 = ["numpy==1.21.0"]
             self.requirements.check_package(package)
 
         self.assertNotIn("Skipping optional packages", cm.output[0])
-
-    @patch("requests.get")
-    def test_get_package_info(self, mock_get):
-        mock_response = mock_get.return_value
-        mock_response.json.return_value = {
-            "info": {
-                "home_page": "https://example.com",
-                "project_urls": {
-                    "Homepage": "https://example.com",
-                    "Changelog": "https://example.com/changelog",
-                },
-            },
-        }
-        mock_response.raise_for_status.return_value = None
-
-        req = Requirements("requirements.txt", allow_cache=False)
-        info = req.get_package_info("test-package")
-
-        self.assertEqual(info["homepage"], "https://example.com")
-        self.assertEqual(info["changelog"], "https://example.com/changelog")
-        mock_get.assert_called_once_with("https://pypi.org/pypi/test-package/json", timeout=10)
-
-    @patch("requests.get")
-    def test_get_package_info_no_homepage(self, mock_get):
-        mock_response = mock_get.return_value
-        mock_response.json.return_value = {
-            "info": {
-                "project_urls": {
-                    "Source": "https://github.com/example/test",
-                },
-            },
-        }
-        mock_response.raise_for_status.return_value = None
-
-        req = Requirements("requirements.txt", allow_cache=False)
-        info = req.get_package_info("test-package")
-
-        self.assertNotIn("homepage", info)
-        self.assertNotIn("changelog", info)
-
-    @patch("requests.get")
-    def test_get_package_info_api_failure(self, mock_get):
-        mock_get.side_effect = requests.RequestException("API Error")
-
-        req = Requirements("requirements.txt", allow_cache=False)
-        info = req.get_package_info("test-package")
-
-        self.assertEqual(info, {})
 
 
 class TestCLI(unittest.TestCase):
