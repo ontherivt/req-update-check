@@ -21,7 +21,3 @@ jobs:
         with:
           # This tells release-please to look for a Python project
           release-type: python
-          # The name of the package (used in release notes)
-          package-name: req-update-check
-          # Include extra files in version bumping
-          extra-files: pyproject.toml
