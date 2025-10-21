@@ -91,22 +91,36 @@ If you need to create a release manually (not recommended for regular releases):
    version = "0.2.1"  # Update this line
    ```
 
-2. **Commit Version Change**
+2. **Commit and Merge Version Change**
 
    ```bash
+   # On a feature branch or directly on main (if you have permission)
    git add pyproject.toml
    git commit -m "chore: bump version to 0.2.1"
+
+   # If on a feature branch, push and create PR
+   git push origin feature-branch
+   # Then merge PR to main via GitHub
+
+   # If working directly on main (ensure you have write access)
    git push origin main
    ```
 
 3. **Create and Push Git Tag**
 
    ```bash
+   # Switch to main and pull latest (ensures you're tagging the merged commit)
+   git checkout main
+   git pull origin main
+
    # Create annotated tag
    git tag -a v0.2.1 -m "Release v0.2.1"
 
-   # Push tag to GitHub
-   git push origin v0.2.1
+   # Push tag to GitHub (this triggers the release workflow)
+   git push origin refs/tags/v0.2.1
+
+   # Alternative: push all tags
+   # git push origin --tags
    ```
 
 4. **Automatic Release Creation**
@@ -307,6 +321,24 @@ req-update-check --version
 - Ensure tag follows `v*` pattern (e.g., `v0.2.1`, not `0.2.1`)
 - Verify tag was pushed to GitHub: `git ls-remote --tags origin`
 - Check workflow file syntax is valid
+
+### Tag Push Error: "src refspec matches more than one"
+
+If you get this error when pushing a tag:
+```
+error: src refspec v0.2.1 matches more than one
+```
+
+This means you have both a branch and a tag with the same name. Use the full ref path:
+```bash
+git push origin refs/tags/v0.2.1
+```
+
+Or delete the conflicting branch if it's no longer needed:
+```bash
+git branch -d v0.2.1  # Delete local branch
+git push origin --delete v0.2.1  # Delete remote branch
+```
 
 ### Test Failures in CI
 
