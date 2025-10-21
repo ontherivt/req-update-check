@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "req-update-check"
-version = "0.2.2"
-description = "Check Python package requirements for updates"
+version = "0.3.2"
+description = "Check Python package requirements for updates with optional AI-powered analysis"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
@@ -15,6 +15,23 @@ authors = [
 ]
 dependencies = [
     "requests>=2.31.0"
+]
+
+[project.optional-dependencies]
+ai = [
+    "anthropic>=0.40.0",
+    "google-generativeai>=0.8.0",
+    "openai>=1.0.0",
+]
+dev = [
+    "coverage>=7.0.0",
+    "pytest>=8.0.0",
+    "pytest-mock>=3.12.0",
+    "respx>=0.21.0",  # Mock HTTP for tests
+    "ruff>=0.1.0",
+]
+all = [
+    "req-update-check[ai]",
 ]
 
 [project.urls]
@@ -108,6 +125,13 @@ ignore = [
     "PTH123",
     "G004",  # use of f-string in log statements
     "PT027",  # use pytest.raises
+    "SLF001",  # private member accessed
+    "EM101",  # exception uses string literal
+    "TRY003",  # long messages outside the exception class
+    "PLR2004",  # magic value in comparison
+    "EM102",  # no f-strings in exceptions
+    "COM812",  # Conflicts with formatter
+    "ISC001",  # Conflicts with formatter
 ]
 # The fixes in extend-unsafe-fixes will require
 # provide the `--unsafe-fixes` flag when fixing.

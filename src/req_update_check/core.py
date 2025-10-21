@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import logging
 import sys
+from pathlib import Path
 
 import requests
 
+from .ai_analyzer import ChangelogAnalyzer
 from .cache import FileCache
+from .formatting import format_ai_analysis
 
 logger = logging.getLogger("req_update_check")
 
@@ -28,6 +31,7 @@ class Requirements:
         path: str,
         allow_cache: bool = True,
         cache_dir: str | None = None,
+        ai_provider=None,
     ):
         self._index = False
         self._get_packages = False
@@ -39,6 +43,18 @@ class Requirements:
         self.updates = []
         cache_dir = cache_dir or ".req-check-cache"
         self.cache = FileCache(cache_dir) if allow_cache else None
+        self.ai_provider = ai_provider
+
+        # Initialize AI analyzer if provider is available
+        self.ai_analyzer = None
+        if ai_provider:
+            # Get codebase path (directory containing the requirements file)
+            codebase_path = str(Path(path).parent.resolve())
+            self.ai_analyzer = ChangelogAnalyzer(
+                provider=ai_provider,
+                cache=self.cache,
+                codebase_path=codebase_path,
+            )
 
     def get_index(self):
         if self._index:
@@ -146,7 +162,7 @@ class Requirements:
                 (package_name, package_version, latest_version, level),
             )
 
-    def report(self):
+    def report(self, ai_check_packages: list[str] | None = None):
         if not self.updates:
             logger.info("All packages are up to date.")
             return
@@ -162,8 +178,26 @@ class Requirements:
                     msg += f"\n\tHomepage: {links['homepage']}"
                 if links.get("changelog"):
                     msg += f"\n\tChangelog: {links['changelog']}"
-            msg += "\n"
             logger.info(msg)
+
+            # AI Analysis if requested
+            should_analyze = ai_check_packages is not None and (
+                ai_check_packages == ["*"] or package_name in ai_check_packages
+            )
+
+            if should_analyze and self.ai_analyzer:
+                logger.info("\n\t🤖 Analyzing with AI...")
+                analysis = self._analyze_update_with_ai(
+                    package_name,
+                    current_version,
+                    latest_version,
+                    level,
+                    links,
+                )
+                if analysis:
+                    logger.info(format_ai_analysis(analysis))
+
+            logger.info("")  # Blank line between packages
 
     def get_package_info(self, package_name: str) -> dict:
         """Get package information using PyPI JSON API."""
@@ -209,3 +243,44 @@ class Requirements:
         if current_minor != latest_minor:
             return "minor"
         return "patch"
+
+    def _analyze_update_with_ai(
+        self,
+        package_name: str,
+        current_version: str,
+        latest_version: str,
+        update_level: str,
+        package_info: dict,
+    ):
+        """
+        Perform AI analysis on a package update
+
+        Args:
+            package_name: Name of the package
+            current_version: Current version
+            latest_version: Latest version
+            update_level: Type of update (major/minor/patch)
+            package_info: Package info dict with homepage/changelog URLs
+
+        Returns:
+            AnalysisResult or None if analysis fails
+        """
+        if not self.ai_analyzer:
+            return None
+
+        try:
+            changelog_url = package_info.get("changelog")
+            homepage_url = package_info.get("homepage")
+
+            # Use the full analyzer pipeline (Phase 2 implementation)
+            return self.ai_analyzer.analyze_update(
+                package_name=package_name,
+                current_version=current_version,
+                latest_version=latest_version,
+                update_level=update_level,
+                changelog_url=changelog_url,
+                homepage_url=homepage_url,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"AI analysis failed for {package_name}: {e}")
+            return None

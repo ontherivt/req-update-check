@@ -24,7 +24,9 @@ class FileCache:
         if cache_file.exists():
             try:
                 data = json.loads(cache_file.read_text())
-                if data["timestamp"] + self.expiry > time.time():
+                # Check if item has custom TTL or use default expiry
+                ttl = data.get("ttl", self.expiry)
+                if data["timestamp"] + ttl > time.time():
                     return data["value"]
                 # Clean up expired cache
                 cache_file.unlink(missing_ok=True)
@@ -33,13 +35,24 @@ class FileCache:
                 cache_file.unlink(missing_ok=True)
         return None
 
-    def set(self, key: str, value: Any) -> None:
-        """Save value to cache with current timestamp."""
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
+        """
+        Save value to cache with current timestamp.
+
+        Args:
+            key: Cache key
+            value: Value to cache
+            ttl: Optional time-to-live in seconds (uses default expiry if not specified)
+        """
         cache_file = self.cache_dir / f"{key}.json"
         data = {
             "timestamp": time.time(),
             "value": value,
         }
+        # Store custom TTL if provided
+        if ttl is not None:
+            data["ttl"] = ttl
+
         cache_file.write_text(json.dumps(data))
 
     def clear(self) -> None:
