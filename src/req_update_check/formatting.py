@@ -43,33 +43,31 @@ def format_ai_analysis(result: AnalysisResult) -> str:  # noqa: C901
     # Breaking changes
     if result.breaking_changes:
         output.append("\tBreaking Changes:")
-        for change in result.breaking_changes:
-            output.append(f"\t  • {change}")  # noqa: PERF401
+        output.extend([f"\t  • {change}" for change in result.breaking_changes])
         output.append("")
+
 
     # Deprecations
     if result.deprecations:
         output.append("\tDeprecations in Your Code:")
-        for dep in result.deprecations:
-            output.append(f"\t  • {dep}")  # noqa: PERF401
+        output.extend([f"\t  • {dep}" for dep in result.deprecations])
         output.append("")
+
 
     # Recommendations
     if result.recommendations:
         output.append("\tRecommendations:")
-        for i, rec in enumerate(result.recommendations, 1):
-            output.append(f"\t  {i}. {rec}")
+        output.extend([f"\t  {i}. {rec}" for i, rec in enumerate(result.recommendations, 1)])
         output.append("")
+
 
     # New features (limit to 3 to avoid overwhelming)
     if result.new_features:
         output.append("\tNew Features:")
-        for feature in result.new_features[:3]:
-            output.append(f"\t  • {feature}")  # noqa: PERF401
+        output.extend([f"\t  • {feature}" for feature in result.new_features[:3]])
         if len(result.new_features) > 3:
             output.append(f"\t  ... and {len(result.new_features) - 3} more")
         output.append("")
-
     # Summary
     output.append(f"\tSummary: {result.summary}")
     output.append("\t" + "─" * 60)
