@@ -13,7 +13,27 @@ This document contains information for developers working on `req-update-check`,
 
 ## Release Process
 
-This project supports two release methods: automated releases using Release Please (recommended) and manual releases.
+This project supports two release methods: automated releases using Release Please (recommended) and manual releases. Both methods automatically publish to PyPI when a release is created.
+
+### PyPI Publishing Setup (One-Time)
+
+Before releases can be published to PyPI, you must configure the PyPI API token:
+
+1. **Generate PyPI API Token**
+   - Log in to [PyPI](https://pypi.org/)
+   - Go to Account Settings → API tokens
+   - Create a new API token with scope limited to the `req-update-check` project
+   - Copy the token (starts with `pypi-`)
+
+2. **Add Token to GitHub Secrets**
+   - Go to your GitHub repository settings
+   - Navigate to Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `PYPI_API_TOKEN`
+   - Value: Paste your PyPI API token
+   - Click "Add secret"
+
+Once configured, all releases (both Release Please and manual) will automatically publish to PyPI.
 
 ### Automated Releases with Release Please
 
@@ -39,9 +59,10 @@ Release Please automates the release process based on Conventional Commits. It c
      - `BREAKING CHANGE:` or `!` → major version (0.2.0 → 1.0.0)
 
 3. **Releasing**: When you merge the Release Please PR:
-   - A new GitHub release is created
+   - A new GitHub release is created with auto-generated release notes
    - A git tag (e.g., `v0.2.1`) is created
-   - The manual release workflow is triggered (see `.github/workflows/release.yml`)
+   - The release workflow is triggered (`.github/workflows/release.yml`)
+   - Package is automatically built and published to PyPI
 
 #### Configuration
 
@@ -109,21 +130,23 @@ If you need to create a release manually (not recommended for regular releases):
    git push origin v0.2.1
    ```
 
-4. **Automatic Release Creation**
+4. **Automatic Release and PyPI Publishing**
 
    The `.github/workflows/release.yml` workflow triggers on tag push and automatically:
-   - Creates a GitHub release
-   - Generates release notes from commits
-   - Attaches release assets
+   - Builds the Python package
+   - Creates a GitHub release with auto-generated release notes
+   - Publishes the package to PyPI
 
 5. **Verify Release**
 
    - Check [GitHub Releases](https://github.com/ontherivt/req-update-check/releases) for the new release
    - Verify the release notes are accurate
+   - Verify the package appears on [PyPI](https://pypi.org/project/req-update-check/)
+   - Test installation: `pip install --upgrade req-update-check`
 
-#### Manual Release Workflow Details
+#### Release Workflow Details
 
-The release workflow (`.github/workflows/release.yml`) is configured as:
+The release workflow (`.github/workflows/release.yml`) runs automatically when a tag is pushed:
 
 ```yaml
 on:
@@ -134,11 +157,18 @@ on:
 jobs:
   release:
     steps:
+      # Build Python package
+      - python -m build
+
+      # Create GitHub release
       - uses: softprops/action-gh-release@v1
         with:
-          draft: false
-          prerelease: false
-          generate_release_notes: true  # Auto-generates from commits
+          generate_release_notes: true
+
+      # Publish to PyPI
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
 ```
 
 ## CI/CD Workflows
@@ -250,9 +280,13 @@ BREAKING CHANGE: explain the breaking change
 
 ## Publishing to PyPI
 
-Publishing to PyPI is currently a manual process (not handled by CI/CD).
+**Note:** PyPI publishing is now automated! When you create a release (via Release Please or manual tag), the package is automatically built and published to PyPI. See [Release Process](#release-process) above.
 
-### Prerequisites
+### Manual PyPI Publishing (Fallback Only)
+
+If the automated publishing fails and you need to publish manually:
+
+#### Prerequisites
 
 1. PyPI account with access to the `req-update-check` project
 2. Install build tools:
@@ -260,7 +294,7 @@ Publishing to PyPI is currently a manual process (not handled by CI/CD).
    pip install build twine
    ```
 
-### Publishing Steps
+#### Publishing Steps
 
 ```bash
 # 1. Ensure you're on the tagged release commit
@@ -275,16 +309,16 @@ python -m build
 # 4. Check distribution
 twine check dist/*
 
-# 5. Upload to PyPI (you'll be prompted for credentials)
+# 5. Upload to PyPI (you'll be prompted for credentials or API token)
 twine upload dist/*
 
 # Or upload to TestPyPI first to verify
 twine upload --repository testpypi dist/*
 ```
 
-### Verification
+#### Verification
 
-After publishing:
+After publishing (automated or manual):
 
 ```bash
 # Install from PyPI to verify
@@ -292,21 +326,71 @@ pip install --upgrade req-update-check
 
 # Check version
 req-update-check --version
+
+# Verify it matches the released version
+python -c "import req_update_check; print(req_update_check.__version__)"
 ```
 
 ## Troubleshooting
 
 ### Release Please Not Creating PR
 
-- Verify commits follow conventional commit format
-- Check workflow permissions in repository settings
-- Review workflow logs in Actions tab
+**Symptom:** Release Please runs but says "No user facing commits found" and doesn't create a PR.
+
+**Cause:** Your commits since the last release don't follow [Conventional Commits](https://www.conventionalcommits.org/) format.
+
+**Solution:**
+
+1. Check your recent commits:
+   ```bash
+   git log --oneline origin/main ^v0.2.0  # Shows commits since last release
+   ```
+
+2. Look for commits that should trigger a release. Valid formats:
+   - `feat: add new feature` → minor version bump
+   - `fix: bug description` → patch version bump
+   - `feat!: breaking change` → major version bump
+
+3. If no commits follow this format, you have two options:
+
+   **Option A: Make a new conventional commit**
+   ```bash
+   # Make a small change and commit with conventional format
+   git commit -m "chore: update dependencies"
+   git push origin main
+   ```
+
+   **Option B: Use manual release process**
+   - Follow the [Manual Release Process](#manual-release-process) instead
+
+4. Other checks:
+   - Verify workflow permissions in repository settings (needs `contents: write` and `pull-requests: write`)
+   - Review workflow logs in Actions tab for detailed errors
 
 ### Manual Release Tag Not Triggering Workflow
 
 - Ensure tag follows `v*` pattern (e.g., `v0.2.1`, not `0.2.1`)
 - Verify tag was pushed to GitHub: `git ls-remote --tags origin`
 - Check workflow file syntax is valid
+
+### PyPI Publishing Fails in Release Workflow
+
+**Common causes:**
+
+1. **Missing or invalid `PYPI_API_TOKEN` secret**
+   - Verify the secret exists in repository settings → Secrets and variables → Actions
+   - Regenerate the token on PyPI if needed and update the secret
+
+2. **Version already exists on PyPI**
+   - PyPI doesn't allow re-uploading the same version
+   - Bump the version in `pyproject.toml` and create a new release
+
+3. **Build failures**
+   - Check the "Build package" step in the workflow logs
+   - Test locally: `python -m build`
+   - Ensure `pyproject.toml` is valid
+
+4. **Fallback:** Use [Manual PyPI Publishing](#manual-pypi-publishing-fallback-only)
 
 ### Test Failures in CI
 
