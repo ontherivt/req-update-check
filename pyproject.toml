@@ -130,6 +130,8 @@ ignore = [
     "TRY003",  # long messages outside the exception class
     "PLR2004",  # magic value in comparison
     "EM102",  # no f-strings in exceptions
+    "COM812",  # Conflicts with formatter
+    "ISC001",  # Conflicts with formatter
 ]
 # The fixes in extend-unsafe-fixes will require
 # provide the `--unsafe-fixes` flag when fixing.
