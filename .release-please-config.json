@@ -1,0 +1,9 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "req-update-check",
+      "extra-files": ["pyproject.toml"]
+    }
+  }
+}
