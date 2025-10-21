@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 import unittest
 
-from src.req_update_check.ai_providers.base import AIProvider
-from src.req_update_check.ai_providers.base import AnalysisResult
-from src.req_update_check.exceptions import AIProviderError
+from req_update_check.ai_providers.base import AIProvider
+from req_update_check.ai_providers.base import AnalysisResult
+from req_update_check.exceptions import AIProviderError
 
 
 class MockProvider(AIProvider):
