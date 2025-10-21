@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from .ai_providers.base import AnalysisResult
 from .changelog_fetcher import ChangelogFetcher
 from .code_scanner import CodebaseScanner
 from .prompts import PromptBuilder
 
 if TYPE_CHECKING:
     from .ai_providers.base import AIProvider
-    from .ai_providers.base import AnalysisResult
     from .cache import FileCache
 
 logger = logging.getLogger("req_update_check")
@@ -80,7 +80,6 @@ class ChangelogAnalyzer:
             cached = self.cache.get(cache_key)
             if cached:
                 logger.debug(f"Using cached analysis for {package_name}")
-                from .ai_providers.base import AnalysisResult
 
                 return AnalysisResult.from_dict(cached)
 
