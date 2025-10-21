@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from .ai_providers.base import AnalysisResult
 
 
-def format_ai_analysis(result: AnalysisResult) -> str:  # noqa: C901
+def format_ai_analysis(result: AnalysisResult) -> str:
     """
     Format AI analysis result for terminal output
 
@@ -46,20 +46,17 @@ def format_ai_analysis(result: AnalysisResult) -> str:  # noqa: C901
         output.extend([f"\t  • {change}" for change in result.breaking_changes])
         output.append("")
 
-
     # Deprecations
     if result.deprecations:
         output.append("\tDeprecations in Your Code:")
         output.extend([f"\t  • {dep}" for dep in result.deprecations])
         output.append("")
 
-
     # Recommendations
     if result.recommendations:
         output.append("\tRecommendations:")
         output.extend([f"\t  {i}. {rec}" for i, rec in enumerate(result.recommendations, 1)])
         output.append("")
-
 
     # New features (limit to 3 to avoid overwhelming)
     if result.new_features:
