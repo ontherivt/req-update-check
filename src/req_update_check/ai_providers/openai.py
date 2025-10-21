@@ -29,10 +29,7 @@ class OpenAIProvider(AIProvider):
             model: Optional model override (defaults to DEFAULT_MODEL)
         """
         if OpenAI is None:
-            msg = (
-                "openai package not installed. "
-                "Install with: pip install 'req-update-check[ai]' or pip install openai"
-            )
+            msg = "openai package not installed. Install with: pip install 'req-update-check[ai]' or pip install openai"
             raise AIProviderError(msg)
 
         self.client = OpenAI(api_key=api_key)
