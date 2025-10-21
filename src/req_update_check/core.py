@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import logging
-import subprocess
 import sys
-from shutil import which
 
 import requests
 
@@ -19,17 +17,10 @@ except ModuleNotFoundError:
     TOMLLIB = False
 
 
-def get_pip_path():
-    pip_path = which("pip")
-    if not pip_path:
-        logger.error("pip executable not found")
-        return None
-    return pip_path
-
-
 class Requirements:
     pypi_index = "https://pypi.python.org/simple/"
     pypi_package_base = "https://pypi.python.org/project/"
+    pypi_json_api = "https://pypi.org/pypi/"
     headers = {"Content-Type": "json", "Accept": "application/vnd.pypi.simple.v1+json"}
 
     def __init__(
@@ -175,40 +166,39 @@ class Requirements:
             logger.info(msg)
 
     def get_package_info(self, package_name: str) -> dict:
-        """Get package information using pip show command."""
+        """Get package information using PyPI JSON API."""
         if self.allow_cache and self.cache:
             info = self.cache.get(f"package-info:{package_name}")
             if info:
                 return info
-        pip_path = get_pip_path()
-        if not pip_path:
-            return {}
+
         try:
-            # ruff: noqa: S603
-            result = subprocess.run(
-                [pip_path, "show", package_name, "--verbose"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
+            res = requests.get(f"{self.pypi_json_api}{package_name}/json", timeout=10)
+            res.raise_for_status()
+            data = res.json()
 
             info = {}
+            project_info = data.get("info", {})
+            project_urls = project_info.get("project_urls", {})
 
-            for line in result.stdout.split("\n"):
-                if "Home-page: " in line:
-                    info["homepage"] = line.split(": ", 1)[1].strip()
+            # Try to get homepage from multiple sources
+            homepage = project_info.get("home_page") or project_urls.get("Homepage")
+            if homepage and homepage != "UNKNOWN":
+                info["homepage"] = homepage
 
-                if "Changelog," in line or "change-log, " in line.lower():
-                    info["changelog"] = line.split(", ", 1)[1].strip()
+            # Try to get changelog from project URLs
+            for key in ["Changelog", "Change Log", "Changes", "Release Notes", "Releases"]:
+                changelog = project_urls.get(key)
+                if changelog:
+                    info["changelog"] = changelog
+                    break
 
-                if "Homepage, " in line:
-                    info["homepage"] = line.split(", ", 1)[1].strip()
             if self.cache:
                 self.cache.set(f"package-info:{package_name}", info)
-            else:
-                return info
-        except subprocess.CalledProcessError:
+        except (requests.RequestException, KeyError, ValueError):
             return {}
+        else:
+            return info
 
     def check_major_minor(self, current_version, latest_version):
         current_major, current_minor, _current_patch, *_ = current_version.split(".") + ["0"] * 3
