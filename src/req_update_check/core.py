@@ -6,7 +6,9 @@ from pathlib import Path
 
 import requests
 
+from .ai_analyzer import ChangelogAnalyzer
 from .cache import FileCache
+from .formatting import format_ai_analysis
 
 logger = logging.getLogger("req_update_check")
 
@@ -46,8 +48,6 @@ class Requirements:
         # Initialize AI analyzer if provider is available
         self.ai_analyzer = None
         if ai_provider:
-            from .ai_analyzer import ChangelogAnalyzer
-
             # Get codebase path (directory containing the requirements file)
             codebase_path = str(Path(path).parent.resolve())
             self.ai_analyzer = ChangelogAnalyzer(
@@ -195,8 +195,6 @@ class Requirements:
                     links,
                 )
                 if analysis:
-                    from .formatting import format_ai_analysis
-
                     logger.info(format_ai_analysis(analysis))
 
             logger.info("")  # Blank line between packages

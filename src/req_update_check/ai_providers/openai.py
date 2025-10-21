@@ -7,6 +7,11 @@ from req_update_check.exceptions import AIProviderError
 from .base import AIProvider
 from .base import AnalysisResult
 
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
 logger = logging.getLogger("req_update_check")
 
 
@@ -23,14 +28,12 @@ class OpenAIProvider(AIProvider):
             api_key: OpenAI API key
             model: Optional model override (defaults to DEFAULT_MODEL)
         """
-        try:
-            from openai import OpenAI
-        except ImportError as e:
+        if OpenAI is None:
             msg = (
                 "openai package not installed. "
                 "Install with: pip install 'req-update-check[ai]' or pip install openai"
             )
-            raise AIProviderError(msg) from e
+            raise AIProviderError(msg)
 
         self.client = OpenAI(api_key=api_key)
         self.model = model or self.DEFAULT_MODEL

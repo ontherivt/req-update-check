@@ -7,6 +7,11 @@ from req_update_check.exceptions import AIProviderError
 from .base import AIProvider
 from .base import AnalysisResult
 
+try:
+    from anthropic import Anthropic
+except ImportError:
+    Anthropic = None
+
 logger = logging.getLogger("req_update_check")
 
 
@@ -23,14 +28,12 @@ class ClaudeProvider(AIProvider):
             api_key: Anthropic API key
             model: Optional model override (defaults to DEFAULT_MODEL)
         """
-        try:
-            from anthropic import Anthropic
-        except ImportError as e:
+        if Anthropic is None:
             msg = (
                 "anthropic package not installed. "
                 "Install with: pip install 'req-update-check[ai]' or pip install anthropic"
             )
-            raise AIProviderError(msg) from e
+            raise AIProviderError(msg)
 
         self.client = Anthropic(api_key=api_key)
         self.model = model or self.DEFAULT_MODEL

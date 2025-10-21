@@ -7,6 +7,11 @@ from req_update_check.exceptions import AIProviderError
 from .base import AIProvider
 from .base import AnalysisResult
 
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
 logger = logging.getLogger("req_update_check")
 
 
@@ -32,14 +37,12 @@ class CustomProvider(AIProvider):
             model: Optional model override
             config: Custom configuration dict with base_url, etc.
         """
-        try:
-            from openai import OpenAI
-        except ImportError as e:
+        if OpenAI is None:
             msg = (
                 "openai package not installed (required for custom providers). "
                 "Install with: pip install 'req-update-check[ai]' or pip install openai"
             )
-            raise AIProviderError(msg) from e
+            raise AIProviderError(msg)
 
         # Get configuration
         self.config = config or {}

@@ -7,6 +7,11 @@ from req_update_check.exceptions import AIProviderError
 from .base import AIProvider
 from .base import AnalysisResult
 
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
 logger = logging.getLogger("req_update_check")
 
 
@@ -23,14 +28,12 @@ class GeminiProvider(AIProvider):
             api_key: Google API key
             model: Optional model override (defaults to DEFAULT_MODEL)
         """
-        try:
-            import google.generativeai as genai
-        except ImportError as e:
+        if genai is None:
             msg = (
                 "google-generativeai package not installed. "
                 "Install with: pip install 'req-update-check[ai]' or pip install google-generativeai"
             )
-            raise AIProviderError(msg) from e
+            raise AIProviderError(msg)
 
         genai.configure(api_key=api_key)
         self.model_name = model or self.DEFAULT_MODEL
