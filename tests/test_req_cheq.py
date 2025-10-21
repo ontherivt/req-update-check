@@ -227,6 +227,7 @@ class TestCLI(unittest.TestCase):
             "requirements.txt",
             allow_cache=True,
             cache_dir=None,
+            ai_provider=None,
         )
         mock_instance.check_packages.assert_called_once()
         mock_instance.report.assert_called_once()
@@ -240,6 +241,7 @@ class TestCLI(unittest.TestCase):
             "requirements.txt",
             allow_cache=False,
             cache_dir=None,
+            ai_provider=None,
         )
 
     @patch(
@@ -254,6 +256,7 @@ class TestCLI(unittest.TestCase):
             "requirements.txt",
             allow_cache=True,
             cache_dir="/custom/cache",
+            ai_provider=None,
         )
 
 
