@@ -172,6 +172,11 @@ class Requirements:
         analyzing_all = ai_check_packages == ["*"]
 
         for idx, package in enumerate(self.updates):
+            # Add separator line before each package (except the first)
+            if idx > 0:
+                separator = "\n" + "=" * 80 + "\n"
+                logger.info(separator)
+
             package_name, current_version, latest_version, level = package
             msg = f"{package_name}: {current_version} -> {latest_version} [{level}]"
             msg += f"\n\tPypi page: {self.pypi_package_base}{package_name}/"
@@ -203,8 +208,6 @@ class Requirements:
                 # Add delay between API calls when analyzing all packages to avoid rate limits
                 if analyzing_all and idx < len(self.updates) - 1:
                     time.sleep(1)  # 1 second delay between packages
-
-            logger.info("")  # Blank line between packages
 
     def get_package_info(self, package_name: str) -> dict:
         """Get package information using PyPI JSON API."""
