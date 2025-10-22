@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import time
 from pathlib import Path
 
 import requests
@@ -168,7 +169,9 @@ class Requirements:
             return
 
         logger.info("The following packages need to be updated:\n")
-        for package in self.updates:
+        analyzing_all = ai_check_packages == ["*"]
+
+        for idx, package in enumerate(self.updates):
             package_name, current_version, latest_version, level = package
             msg = f"{package_name}: {current_version} -> {latest_version} [{level}]"
             msg += f"\n\tPypi page: {self.pypi_package_base}{package_name}/"
@@ -196,6 +199,10 @@ class Requirements:
                 )
                 if analysis:
                     logger.info(format_ai_analysis(analysis))
+
+                # Add delay between API calls when analyzing all packages to avoid rate limits
+                if analyzing_all and idx < len(self.updates) - 1:
+                    time.sleep(1)  # 1 second delay between packages
 
             logger.info("")  # Blank line between packages
 
