@@ -99,16 +99,31 @@ class AIProvider(ABC):
         for attempt in range(max_retries):
             try:
                 return func()
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:  # noqa: PERF203, BLE001
                 last_error = e
+                error_str = str(e)
+
+                # Check for quota/rate limit errors (common across providers)
+                is_quota_error = any(
+                    keyword in error_str.lower() for keyword in ["quota", "rate limit", "429", "resource_exhausted"]
+                )
+
                 if attempt < max_retries - 1:
                     wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
                     logger.debug(f"Retry {attempt + 1}/{max_retries} after {wait_time}s: {e}")
                     time.sleep(wait_time)
+                elif is_quota_error:
+                    # Use warning instead of exception to avoid full stack trace for quota errors
+                    logger.warning(f"API quota/rate limit exceeded after {max_retries} retries")
                 else:
-                    logger.exception(f"All {max_retries} retries failed")
+                    logger.warning(f"All {max_retries} retries failed: {type(e).__name__}: {error_str[:200]}")
 
-        raise AIProviderError(f"Failed after {max_retries} retries: {last_error}") from last_error
+        # Simplify error message for quota errors
+        error_msg = str(last_error)
+        if "quota" in error_msg.lower() or "429" in error_msg:
+            error_msg = error_msg.split("\n")[0]  # Just first line for quota errors
+
+        raise AIProviderError(f"Failed after {max_retries} retries: {error_msg}") from last_error
 
     def _get_system_prompt(self) -> str:
         """Get the standard system prompt for analysis"""
