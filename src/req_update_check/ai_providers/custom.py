@@ -7,10 +7,15 @@ from req_update_check.exceptions import AIProviderError
 from .base import AIProvider
 from .base import AnalysisResult
 
+OpenAI = None
+openai_import_error = None
+
 try:
     from openai import OpenAI
-except ImportError:
-    OpenAI = None
+except ImportError as e:
+    openai_import_error = str(e)
+except Exception as e:  # noqa: BLE001
+    openai_import_error = f"Import failed: {type(e).__name__}: {e}"
 
 logger = logging.getLogger("req_update_check")
 
@@ -38,10 +43,17 @@ class CustomProvider(AIProvider):
             config: Custom configuration dict with base_url, etc.
         """
         if OpenAI is None:
-            msg = (
-                "openai package not installed (required for custom providers). "
-                "Install with: pip install 'req-update-check[ai]' or pip install openai"
-            )
+            if openai_import_error and "No module named" in openai_import_error:
+                msg = (
+                    "openai package not installed (required for custom providers). "
+                    "Install with: pip install 'req-update-check[ai]' or pip install openai"
+                )
+            else:
+                msg = (
+                    f"openai package import failed: {openai_import_error}. "
+                    "This may be due to a broken dependency. Try reinstalling: "
+                    "pip install --force-reinstall openai"
+                )
             raise AIProviderError(msg)
 
         # Get configuration

@@ -7,10 +7,15 @@ from req_update_check.exceptions import AIProviderError
 from .base import AIProvider
 from .base import AnalysisResult
 
+Anthropic = None
+anthropic_import_error = None
+
 try:
     from anthropic import Anthropic
-except ImportError:
-    Anthropic = None
+except ImportError as e:
+    anthropic_import_error = str(e)
+except Exception as e:  # noqa: BLE001
+    anthropic_import_error = f"Import failed: {type(e).__name__}: {e}"
 
 logger = logging.getLogger("req_update_check")
 
@@ -29,10 +34,17 @@ class ClaudeProvider(AIProvider):
             model: Optional model override (defaults to DEFAULT_MODEL)
         """
         if Anthropic is None:
-            msg = (
-                "anthropic package not installed. "
-                "Install with: pip install 'req-update-check[ai]' or pip install anthropic"
-            )
+            if anthropic_import_error and "No module named" in anthropic_import_error:
+                msg = (
+                    "anthropic package not installed. "
+                    "Install with: pip install 'req-update-check[ai]' or pip install anthropic"
+                )
+            else:
+                msg = (
+                    f"anthropic package import failed: {anthropic_import_error}. "
+                    "This may be due to a broken dependency. Try reinstalling: "
+                    "pip install --force-reinstall anthropic"
+                )
             raise AIProviderError(msg)
 
         self.client = Anthropic(api_key=api_key)

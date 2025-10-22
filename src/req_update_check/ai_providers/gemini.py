@@ -7,10 +7,15 @@ from req_update_check.exceptions import AIProviderError
 from .base import AIProvider
 from .base import AnalysisResult
 
+genai = None
+genai_import_error = None
+
 try:
     import google.generativeai as genai
-except ImportError:
-    genai = None
+except ImportError as e:
+    genai_import_error = str(e)
+except Exception as e:  # noqa: BLE001
+    genai_import_error = f"Import failed: {type(e).__name__}: {e}"
 
 logger = logging.getLogger("req_update_check")
 
@@ -29,10 +34,17 @@ class GeminiProvider(AIProvider):
             model: Optional model override (defaults to DEFAULT_MODEL)
         """
         if genai is None:
-            msg = (
-                "google-generativeai package not installed. "
-                "Install with: pip install 'req-update-check[ai]' or pip install google-generativeai"
-            )
+            if genai_import_error and "No module named" in genai_import_error:
+                msg = (
+                    "google-generativeai package not installed. "
+                    "Install with: pip install 'req-update-check[ai]' or pip install google-generativeai"
+                )
+            else:
+                msg = (
+                    f"google-generativeai package import failed: {genai_import_error}. "
+                    "This may be due to a broken dependency. Try reinstalling: "
+                    "pip install --force-reinstall google-generativeai"
+                )
             raise AIProviderError(msg)
 
         genai.configure(api_key=api_key)
