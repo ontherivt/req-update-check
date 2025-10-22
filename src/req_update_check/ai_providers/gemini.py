@@ -9,7 +9,7 @@ from .base import AnalysisResult
 
 try:
     import google.generativeai as genai
-except ImportError:
+except Exception:  # noqa: BLE001
     genai = None
 
 logger = logging.getLogger("req_update_check")

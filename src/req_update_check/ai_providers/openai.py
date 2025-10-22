@@ -9,7 +9,7 @@ from .base import AnalysisResult
 
 try:
     from openai import OpenAI
-except ImportError:
+except Exception:  # noqa: BLE001
     OpenAI = None
 
 logger = logging.getLogger("req_update_check")

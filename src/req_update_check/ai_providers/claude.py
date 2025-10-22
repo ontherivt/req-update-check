@@ -9,7 +9,7 @@ from .base import AnalysisResult
 
 try:
     from anthropic import Anthropic
-except ImportError:
+except Exception:  # noqa: BLE001
     Anthropic = None
 
 logger = logging.getLogger("req_update_check")
