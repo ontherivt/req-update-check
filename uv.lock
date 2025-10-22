@@ -1706,8 +1706,9 @@ version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "build" },
-    { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, extra = ["toml"], marker = "python_full_version < '3.10'" },
     { name = "coverage", version = "7.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "coverage", version = "7.11.0", source = { registry = "https://pypi.org/simple" }, extra = ["toml"], marker = "python_full_version == '3.10.*'" },
     { name = "coveralls" },
     { name = "pre-commit" },
     { name = "requests" },
@@ -1735,12 +1736,19 @@ dev = [
     { name = "ruff" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, extra = ["toml"], marker = "python_full_version < '3.10'" },
+    { name = "coverage", version = "7.11.0", source = { registry = "https://pypi.org/simple" }, extra = ["toml"], marker = "python_full_version == '3.10.*'" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anthropic", marker = "extra == 'ai'", specifier = ">=0.40.0" },
     { name = "build", specifier = ">=1.3.0" },
     { name = "coverage", specifier = ">=7.10.7" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "coverage", extras = ["toml"], marker = "python_full_version < '3.11'", specifier = ">=7.10.7" },
     { name = "coveralls", specifier = ">=4.0.1" },
     { name = "google-generativeai", marker = "extra == 'ai'", specifier = ">=0.8.0" },
     { name = "openai", marker = "extra == 'ai'", specifier = ">=1.0.0" },
@@ -1755,6 +1763,9 @@ requires-dist = [
     { name = "twine", specifier = ">=6.2.0" },
 ]
 provides-extras = ["ai", "dev", "all"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "coverage", extras = ["toml"], marker = "python_full_version < '3.11'", specifier = ">=7.10.7" }]
 
 [[package]]
 name = "requests"

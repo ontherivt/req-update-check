@@ -29,15 +29,19 @@ ai = [
     "google-generativeai>=0.8.0",
     "openai>=1.0.0",
 ]
+all = [
+    "req-update-check[ai]",
+]
+
+
+[dependency-groups]
 dev = [
+    "coverage[toml]>=7.10.7 ; python_full_version < '3.11'",
     "coverage>=7.0.0",
     "pytest>=8.0.0",
     "pytest-mock>=3.12.0",
     "respx>=0.21.0",  # Mock HTTP for tests
     "ruff>=0.1.0",
-]
-all = [
-    "req-update-check[ai]",
 ]
 
 [project.urls]
