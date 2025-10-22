@@ -1,9 +1,0 @@
-requests==2.32.5
-
-# dev + testing
-coverage
-ruff
-pre-commit
-coveralls
-build
-twine
