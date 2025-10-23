@@ -1727,45 +1727,39 @@ all = [
     { name = "google-generativeai" },
     { name = "openai" },
 ]
+
+[package.dev-dependencies]
 dev = [
-    { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "coverage", version = "7.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pytest" },
     { name = "pytest-mock" },
     { name = "respx" },
     { name = "ruff" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, extra = ["toml"], marker = "python_full_version < '3.10'" },
-    { name = "coverage", version = "7.11.0", source = { registry = "https://pypi.org/simple" }, extra = ["toml"], marker = "python_full_version == '3.10.*'" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "anthropic", marker = "extra == 'ai'", specifier = ">=0.40.0" },
     { name = "build", specifier = ">=1.3.0" },
-    { name = "coverage", specifier = ">=7.10.7" },
-    { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "coverage", marker = "python_full_version >= '3.11'", specifier = ">=7.0.0" },
     { name = "coverage", extras = ["toml"], marker = "python_full_version < '3.11'", specifier = ">=7.10.7" },
     { name = "coveralls", specifier = ">=4.0.1" },
     { name = "google-generativeai", marker = "extra == 'ai'", specifier = ">=0.8.0" },
     { name = "openai", marker = "extra == 'ai'", specifier = ">=1.0.0" },
     { name = "pre-commit", specifier = ">=4.3.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.12.0" },
     { name = "req-update-check", extras = ["ai"], marker = "extra == 'all'" },
     { name = "requests", specifier = ">=2.31.0" },
-    { name = "respx", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "ruff", specifier = ">=0.14.1" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "twine", specifier = ">=6.2.0" },
 ]
-provides-extras = ["ai", "dev", "all"]
+provides-extras = ["ai", "all"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "coverage", extras = ["toml"], marker = "python_full_version < '3.11'", specifier = ">=7.10.7" }]
+dev = [
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-mock", specifier = ">=3.12.0" },
+    { name = "respx", specifier = ">=0.21.0" },
+    { name = "ruff", specifier = ">=0.1.0" },
+]
 
 [[package]]
 name = "requests"

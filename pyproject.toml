@@ -15,7 +15,8 @@ authors = [
 ]
 dependencies = [
     "build>=1.3.0",
-    "coverage>=7.10.7",
+    "coverage[toml]>=7.10.7 ; python_full_version < '3.11'",
+    "coverage>=7.0.0; python_full_version >= '3.11'",
     "coveralls>=4.0.1",
     "pre-commit>=4.3.0",
     "requests>=2.31.0",
@@ -36,8 +37,6 @@ all = [
 
 [dependency-groups]
 dev = [
-    "coverage[toml]>=7.10.7 ; python_full_version < '3.11'",
-    "coverage>=7.0.0",
     "pytest>=8.0.0",
     "pytest-mock>=3.12.0",
     "respx>=0.21.0",  # Mock HTTP for tests
