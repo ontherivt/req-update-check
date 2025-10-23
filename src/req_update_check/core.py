@@ -222,8 +222,8 @@ class Requirements:
             data = res.json()
 
             info = {}
-            project_info = data.get("info", {})
-            project_urls = project_info.get("project_urls", {})
+            project_info = data.get("info") or {}
+            project_urls = project_info.get("project_urls") or {}
 
             # Try to get homepage from multiple sources
             homepage = project_info.get("home_page") or project_urls.get("Homepage")
