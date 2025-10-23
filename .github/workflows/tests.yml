@@ -36,14 +36,31 @@ jobs:
       - name: Run tests
         run: |
           if [ "${{ matrix.python-version }}" = "3.13" ]; then
-            uv run coverage run -m unittest discover
+            uv run --extra ai coverage run -m unittest discover
             uvx coverage report
             uvx coverage xml
           else
-            uv run python -m unittest discover
+            uv run --extra ai python -m unittest discover
           fi
       - name: Submit to Coveralls
         if: matrix.python-version == '3.13'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uvx coveralls --service=github
+
+  test-without-optional-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install uv and set the Python version
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - name: Test import error handling
+        run: |
+            uv run --isolated --no-extra ai coverage run -m unittest tests.test_ai_providers.test_import_errors
+            uvx coverage xml
+      - name: Submit to Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: uvx coveralls --service=github
