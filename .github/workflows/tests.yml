@@ -35,9 +35,13 @@ jobs:
           uv sync --group dev --extra ai
       - name: Run tests
         run: |
-          uv run --extra ai coverage run -m unittest discover
-          uvx coverage report
-          uvx coverage xml
+          if [ "${{ matrix.python-version }}" = "3.13" ]; then
+            uv run --extra ai coverage run -m unittest discover
+            uvx coverage report
+            uvx coverage xml
+          else
+            uv run --extra ai python -m unittest discover
+          fi
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@v2
         with:
