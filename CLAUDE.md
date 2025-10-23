@@ -193,9 +193,8 @@ req-update-check requirements.txt --ai-check --ai-provider gemini
    - `format_ai_analysis()` displays formatted results
 
 ### File Format Support
-- **requirements.txt**: Line-based, supports `==` version pins, comments (`#`), inline comments
 - **pyproject.toml**: Reads `project.dependencies` and `dependency-groups` (Python 3.11+ only via tomllib)
-- Currently only `==` exact version specifiers are supported
+- **uv.lock**: Pins project versions to a specific version.
 
 ## Configuration
 
