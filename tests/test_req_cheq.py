@@ -198,7 +198,22 @@ group2 = ["numpy==1.21.0"]
         mock_response.raise_for_status.return_value = None
 
         req = Requirements("requirements.txt", allow_cache=False)
-        info = req.get_package_info("test-package")
+        info = req.get_package_info("app-store-server-library")
+
+        self.assertNotIn("homepage", info)
+        self.assertNotIn("changelog", info)
+
+    @patch("requests.get")
+    def test_get_package_info_none(self, mock_get):
+        mock_response = mock_get.return_value
+        mock_response.json.return_value = {
+            "info": {
+                "project_urls": None,
+                "project_url": "https://pypi.org/project/app-store-server-library/",
+            },
+        }
+        req = Requirements("requirements.txt", allow_cache=False)
+        info = req.get_package_info("app-store-server-library")
 
         self.assertNotIn("homepage", info)
         self.assertNotIn("changelog", info)
