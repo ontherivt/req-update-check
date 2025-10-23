@@ -60,8 +60,8 @@ class ChangelogFetcher:
 
         content = None
 
-        # Strategy 1: Direct changelog URL
-        if changelog_url:
+        # Strategy 1: Direct changelog URL (skip if it's a GitHub releases page - use API instead)
+        if changelog_url and not self._is_github_releases_page(changelog_url):
             logger.debug(f"Fetching changelog from direct URL: {changelog_url}")
             content = self._fetch_url(changelog_url)
 
@@ -83,6 +83,18 @@ class ChangelogFetcher:
             self.cache.set(cache_key, result, ttl=604800)
 
         return result
+
+    def _is_github_releases_page(self, url: str) -> bool:
+        """
+        Check if URL is a GitHub releases page
+
+        Args:
+            url: URL to check
+
+        Returns:
+            True if URL is a GitHub releases page
+        """
+        return "github.com" in url and "/releases" in url
 
     def _fetch_url(self, url: str) -> str | None:
         """

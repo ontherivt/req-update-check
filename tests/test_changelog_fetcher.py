@@ -163,6 +163,48 @@ class TestChangelogFetcher(unittest.TestCase):
 
         self.assertIn("Direct changelog", result)
 
+    def test_is_github_releases_page(self):
+        """Test detection of GitHub releases pages"""
+        # Should detect GitHub releases pages
+        self.assertTrue(self.fetcher._is_github_releases_page("https://github.com/owner/repo/releases"))
+        self.assertTrue(self.fetcher._is_github_releases_page("https://github.com/DataDog/dd-trace-py/releases"))
+
+        # Should not detect non-releases GitHub pages
+        self.assertFalse(self.fetcher._is_github_releases_page("https://github.com/owner/repo"))
+        self.assertFalse(self.fetcher._is_github_releases_page("https://example.com/changelog"))
+        self.assertFalse(self.fetcher._is_github_releases_page("https://readthedocs.io/changelog"))
+
+    @patch("req_update_check.changelog_fetcher.requests.Session.get")
+    def test_fetch_changelog_skips_github_releases_url(self, mock_get):
+        """Test that GitHub releases URLs use API instead of direct fetch"""
+        # Mock GitHub API response
+        mock_response = Mock()
+        mock_response.json.return_value = [
+            {
+                "tag_name": "v1.5.0",
+                "name": "Release 1.5.0",
+                "body": "Bug fixes from GitHub API",
+            },
+        ]
+        mock_response.raise_for_status = Mock()
+        mock_get.return_value = mock_response
+
+        result = self.fetcher.fetch_changelog(
+            package_name="test-package",
+            changelog_url="https://github.com/owner/repo/releases",  # This should be skipped
+            homepage_url="https://github.com/owner/repo",
+            from_version="1.0.0",
+            to_version="2.0.0",
+        )
+
+        # Should use GitHub API, not direct URL fetch
+        self.assertIn("Bug fixes from GitHub API", result)
+        # Verify API endpoint was called (contains api.github.com), not the HTML releases page
+        mock_get.assert_called_once()
+        call_args = mock_get.call_args[0][0]
+        self.assertIn("api.github.com", call_args)
+        self.assertIn("/repos/", call_args)  # API path structure
+
 
 if __name__ == "__main__":
     unittest.main()
