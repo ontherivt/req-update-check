@@ -1684,7 +1684,7 @@ requires-dist = [
     { name = "google-generativeai", marker = "extra == 'ai'", specifier = ">=0.8.0" },
     { name = "openai", marker = "extra == 'ai'", specifier = ">=1.0.0" },
     { name = "req-update-check", extras = ["ai"], marker = "extra == 'all'" },
-    { name = "requests" },
+    { name = "requests", specifier = ">=2.27.0" },
 ]
 provides-extras = ["ai", "all"]
 

@@ -14,7 +14,7 @@ authors = [
     { name = "PJ Hoberman", email = "phoberman@outsideinc.com" }
 ]
 dependencies = [
-    "requests",
+    "requests>=2.27.0",
 ]
 
 [project.optional-dependencies]
