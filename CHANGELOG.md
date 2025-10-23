@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/ontherivt/req-update-check/compare/v0.3.0...v0.4.0) (2025-10-23)
+
+
+### Features
+
+* Handle project_urls=None in pypi response ([664aeef](https://github.com/ontherivt/req-update-check/commit/664aeef2e75ad19c3bd7a89bbffa81fcfaaa9cbb))
+
 ## [0.3.0](https://github.com/ontherivt/req-update-check/compare/v0.2.2...v0.3.0) (2025-10-22)
 
 
