@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/ontherivt/req-update-check/compare/v0.4.0...v0.4.1) (2025-10-23)
+
+
+### Bug Fixes
+
+* check release notes ([f14df54](https://github.com/ontherivt/req-update-check/commit/f14df543b746ba011322e42682a6826152abc7ae))
+
 ## [0.4.0](https://github.com/ontherivt/req-update-check/compare/v0.3.0...v0.4.0) (2025-10-23)
 
 
