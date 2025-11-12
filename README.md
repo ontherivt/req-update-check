@@ -92,7 +92,7 @@ _Note: pyproject.toml support requires Python 3.11+_
 - `--cache-dir CACHE_DIR`: Custom cache directory (default: `~/.req-check-cache`)
 
 **AI Analysis Options:**
-- `--ai-check [PACKAGE]`: Analyze updates with AI (optionally specify package name, or analyze all if omitted)
+- `--ai-check [PACKAGE]`: Analyze updates with AI (optionally specify package name, or analyze all if omitted). Will only display selected package.
 - `--ai-provider {claude,gemini,openai,custom}`: Choose AI provider (default: claude)
 - `--ai-model MODEL`: Override default model for the provider
 - `--api-key API_KEY`: Provide API key directly (or use environment variables)
