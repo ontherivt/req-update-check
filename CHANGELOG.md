@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/ontherivt/req-update-check/compare/v0.4.1...v0.4.2) (2025-11-12)
+
+
+### Bug Fixes
+
+* --ai-check will only show the selected package ([d514683](https://github.com/ontherivt/req-update-check/commit/d5146837dc9aa9971504e4661ba43f13c84b06a7))
+
 ## [0.4.1](https://github.com/ontherivt/req-update-check/compare/v0.4.0...v0.4.1) (2025-10-23)
 
 
