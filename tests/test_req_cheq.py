@@ -279,6 +279,101 @@ class TestCLI(unittest.TestCase):
 class TestRequirementsWithAI(unittest.TestCase):
     """Tests for Requirements with AI analyzer integration"""
 
+    def test_report_filters_by_ai_check_package(self):
+        """Test that report filters packages when ai_check_packages is specified"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+            ("pytest", "5.0.0", "6.0.0", "major"),
+        ]
+
+        # Test filtering to single package
+        with self.assertLogs("req_update_check", level="INFO") as cm:
+            req.report(ai_check_packages=["requests"])
+
+        output = "\n".join(cm.output)
+        # Should contain requests
+        self.assertIn("requests", output)
+        # Should NOT contain flask or pytest
+        self.assertNotIn("flask", output)
+        self.assertNotIn("pytest", output)
+
+    def test_report_filters_multiple_packages(self):
+        """Test that report filters to multiple specified packages"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+            ("pytest", "5.0.0", "6.0.0", "major"),
+        ]
+
+        # Test filtering to multiple packages
+        with self.assertLogs("req_update_check", level="INFO") as cm:
+            req.report(ai_check_packages=["requests", "pytest"])
+
+        output = "\n".join(cm.output)
+        # Should contain requests and pytest
+        self.assertIn("requests", output)
+        self.assertIn("pytest", output)
+        # Should NOT contain flask
+        self.assertNotIn("flask", output)
+
+    def test_report_shows_all_with_asterisk(self):
+        """Test that report shows all packages when ai_check_packages is ['*']"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+            ("pytest", "5.0.0", "6.0.0", "major"),
+        ]
+
+        # Test showing all packages with "*"
+        with self.assertLogs("req_update_check", level="INFO") as cm:
+            req.report(ai_check_packages=["*"])
+
+        output = "\n".join(cm.output)
+        # Should contain all packages
+        self.assertIn("requests", output)
+        self.assertIn("flask", output)
+        self.assertIn("pytest", output)
+
+    def test_report_shows_all_when_no_filter(self):
+        """Test that report shows all packages when ai_check_packages is None"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+        ]
+
+        # Test showing all packages when None
+        with self.assertLogs("req_update_check", level="INFO") as cm:
+            req.report(ai_check_packages=None)
+
+        output = "\n".join(cm.output)
+        # Should contain all packages
+        self.assertIn("requests", output)
+        self.assertIn("flask", output)
+
+    def test_report_handles_no_matching_packages(self):
+        """Test that report handles case when no packages match the filter"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+        ]
+
+        # Test filtering to non-existent package
+        with self.assertLogs("req_update_check", level="INFO") as cm:
+            req.report(ai_check_packages=["nonexistent"])
+
+        output = "\n".join(cm.output)
+        # Should show message about no updates found
+        self.assertIn("No updates found for the specified package(s): nonexistent", output)
+        # Should NOT contain requests or flask
+        self.assertNotIn("requests: 1.0.0 -> 2.0.0", output)
+        self.assertNotIn("flask: 1.0.0 -> 1.5.0", output)
+
     @patch("requests.get")
     def test_analyze_update_with_ai_success(self, mock_get):
         """Test AI analysis of package update"""

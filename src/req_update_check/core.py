@@ -168,10 +168,18 @@ class Requirements:
             logger.info("All packages are up to date.")
             return
 
+        # Filter updates to only show packages in ai_check_packages if specified
+        updates_to_show = self.updates
+        if ai_check_packages is not None and ai_check_packages != ["*"]:
+            updates_to_show = [pkg for pkg in self.updates if pkg[0] in ai_check_packages]
+            if not updates_to_show:
+                logger.info(f"No updates found for the specified package(s): {', '.join(ai_check_packages)}")
+                return
+
         logger.info("The following packages need to be updated:\n")
         analyzing_all = ai_check_packages == ["*"]
 
-        for idx, package in enumerate(self.updates):
+        for idx, package in enumerate(updates_to_show):
             # Add separator line before each package (except the first)
             if idx > 0:
                 separator = "\n" + "=" * 80 + "\n"
@@ -206,7 +214,7 @@ class Requirements:
                     logger.info(format_ai_analysis(analysis))
 
                 # Add delay between API calls when analyzing all packages to avoid rate limits
-                if analyzing_all and idx < len(self.updates) - 1:
+                if analyzing_all and idx < len(updates_to_show) - 1:
                     time.sleep(1)  # 1 second delay between packages
 
     def get_package_info(self, package_name: str) -> dict:
