@@ -163,46 +163,118 @@ class Requirements:
                 (package_name, package_version, latest_version, level),
             )
 
-    def report(self, ai_check_packages: list[str] | None = None):
+    def report(self, ai_check_packages: list[str] | None = None, output_format: str = "text"):
+        json_output = output_format == "json"
+        result = self._build_report_data(ai_check_packages, json_output)
+
+        if json_output:
+            return result
+
+        return self._report_text(ai_check_packages)
+
+    def _report_text(self, ai_check_packages: list[str] | None) -> None:
+        """Output report in human-readable text format."""
         if not self.updates:
             logger.info("All packages are up to date.")
             return
 
         # Filter updates to only show packages in ai_check_packages if specified
-        updates_to_show = self.updates
-        if ai_check_packages is not None and ai_check_packages != ["*"]:
-            updates_to_show = [pkg for pkg in self.updates if pkg[0] in ai_check_packages]
-            if not updates_to_show:
-                logger.info(f"No updates found for the specified package(s): {', '.join(ai_check_packages)}")
-                return
+        updates_to_show = self._filter_updates(ai_check_packages)
+        if updates_to_show is None:
+            return
 
         logger.info("The following packages need to be updated:\n")
         analyzing_all = ai_check_packages == ["*"]
 
         for idx, package in enumerate(updates_to_show):
-            # Add separator line before each package (except the first)
-            if idx > 0:
-                separator = "\n" + "=" * 80 + "\n"
-                logger.info(separator)
+            self._report_package_text(package, idx, ai_check_packages, analyzing_all, len(updates_to_show))
 
+        return
+
+    def _filter_updates(self, ai_check_packages: list[str] | None) -> list | None:
+        """Filter updates based on ai_check_packages. Returns None if no matches found."""
+        if ai_check_packages is None or ai_check_packages == ["*"]:
+            return self.updates
+
+        updates_to_show = [pkg for pkg in self.updates if pkg[0] in ai_check_packages]
+        if not updates_to_show:
+            logger.info(f"No updates found for the specified package(s): {', '.join(ai_check_packages)}")
+            return None
+        return updates_to_show
+
+    def _report_package_text(
+        self,
+        package: tuple,
+        idx: int,
+        ai_check_packages: list[str] | None,
+        analyzing_all: bool,
+        total_packages: int,
+    ) -> None:
+        """Output a single package update in text format."""
+        if idx > 0:
+            separator = "\n" + "=" * 80 + "\n"
+            logger.info(separator)
+
+        package_name, current_version, latest_version, level = package
+        msg = f"{package_name}: {current_version} -> {latest_version} [{level}]"
+        msg += f"\n\tPypi page: {self.pypi_package_base}{package_name}/"
+        links = self.get_package_info(package_name)
+        if links:
+            if links.get("homepage"):
+                msg += f"\n\tHomepage: {links['homepage']}"
+            if links.get("changelog"):
+                msg += f"\n\tChangelog: {links['changelog']}"
+        logger.info(msg)
+
+        # AI Analysis if requested
+        should_analyze = ai_check_packages is not None and (
+            ai_check_packages == ["*"] or package_name in ai_check_packages
+        )
+
+        if should_analyze and self.ai_analyzer:
+            logger.info("\n\t🤖 Analyzing with AI...")
+            analysis = self._analyze_update_with_ai(
+                package_name,
+                current_version,
+                latest_version,
+                level,
+                links,
+            )
+            if analysis:
+                logger.info(format_ai_analysis(analysis))
+
+            # Add delay between API calls when analyzing all packages to avoid rate limits
+            if analyzing_all and idx < total_packages - 1:
+                time.sleep(1)  # 1 second delay between packages
+
+    def _build_report_data(self, ai_check_packages: list[str] | None, include_ai: bool = False) -> dict:
+        """Build structured report data for JSON output."""
+        packages_data = []
+        analyzing_all = ai_check_packages == ["*"]
+
+        # Determine which packages to include
+        updates_to_process = self.updates
+        if ai_check_packages is not None and ai_check_packages != ["*"]:
+            updates_to_process = [pkg for pkg in self.updates if pkg[0] in ai_check_packages]
+
+        for idx, package in enumerate(updates_to_process):
             package_name, current_version, latest_version, level = package
-            msg = f"{package_name}: {current_version} -> {latest_version} [{level}]"
-            msg += f"\n\tPypi page: {self.pypi_package_base}{package_name}/"
             links = self.get_package_info(package_name)
-            if links:
-                if links.get("homepage"):
-                    msg += f"\n\tHomepage: {links['homepage']}"
-                if links.get("changelog"):
-                    msg += f"\n\tChangelog: {links['changelog']}"
-            logger.info(msg)
 
-            # AI Analysis if requested
+            pkg_data = {
+                "name": package_name,
+                "current_version": current_version,
+                "latest_version": latest_version,
+                "has_update": True,
+                "version_change": level,
+            }
+
+            # Add AI analysis if requested
             should_analyze = ai_check_packages is not None and (
                 ai_check_packages == ["*"] or package_name in ai_check_packages
             )
 
             if should_analyze and self.ai_analyzer:
-                logger.info("\n\t🤖 Analyzing with AI...")
                 analysis = self._analyze_update_with_ai(
                     package_name,
                     current_version,
@@ -211,11 +283,39 @@ class Requirements:
                     links,
                 )
                 if analysis:
-                    logger.info(format_ai_analysis(analysis))
+                    pkg_data.update(
+                        {
+                            "safety": analysis.safety,
+                            "confidence": analysis.confidence,
+                            "recommendations": analysis.recommendations,
+                            "breaking_changes": analysis.breaking_changes,
+                            "deprecations": analysis.deprecations,
+                            "new_features": analysis.new_features,
+                            "summary": analysis.summary,
+                        }
+                    )
 
-                # Add delay between API calls when analyzing all packages to avoid rate limits
-                if analyzing_all and idx < len(updates_to_show) - 1:
-                    time.sleep(1)  # 1 second delay between packages
+                # Add delay between API calls when analyzing all packages
+                if analyzing_all and idx < len(updates_to_process) - 1:
+                    time.sleep(1)
+
+            packages_data.append(pkg_data)
+
+        # Build metadata
+        metadata = {
+            "requirements_file": self.path,
+            "total_packages": len(self.packages) if self.packages else 0,
+            "packages_with_updates": len(self.updates),
+        }
+
+        if self.ai_provider:
+            metadata["ai_provider"] = self.ai_provider.__class__.__name__.replace("Provider", "").lower()
+            metadata["ai_model"] = self.ai_provider.get_model_name()
+
+        return {
+            "packages": packages_data,
+            "metadata": metadata,
+        }
 
     def get_package_info(self, package_name: str) -> dict:
         """Get package information using PyPI JSON API."""

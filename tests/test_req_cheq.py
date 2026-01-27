@@ -246,7 +246,7 @@ class TestCLI(unittest.TestCase):
             ai_provider=None,
         )
         mock_instance.check_packages.assert_called_once()
-        mock_instance.report.assert_called_once()
+        mock_instance.report.assert_called_once_with(ai_check_packages=None, output_format="text")
 
     @patch("sys.argv", ["req-check", "requirements.txt", "--no-cache"])
     @patch("builtins.print")
@@ -274,6 +274,16 @@ class TestCLI(unittest.TestCase):
             cache_dir="/custom/cache",
             ai_provider=None,
         )
+
+    @patch("sys.argv", ["req-check", "requirements.txt", "--output", "json"])
+    @patch("builtins.print")
+    @patch("src.req_update_check.cli.Requirements")
+    def test_main_json_output(self, mock_requirements, mock_print):
+        mock_instance = mock_requirements.return_value
+        mock_instance.report.return_value = {"packages": [], "metadata": {}}
+        main()
+        mock_instance.report.assert_called_once_with(ai_check_packages=None, output_format="json")
+        mock_print.assert_called_once()
 
 
 class TestRequirementsWithAI(unittest.TestCase):
@@ -431,6 +441,125 @@ class TestRequirementsWithAI(unittest.TestCase):
         req = Requirements("requirements.txt", allow_cache=False, ai_provider=None)
 
         self.assertIsNone(req.ai_analyzer)
+
+
+class TestJSONOutput(unittest.TestCase):
+    """Tests for JSON output format"""
+
+    def test_report_json_output_format(self):
+        """Test that report returns structured JSON data when output_format is json"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+        ]
+
+        result = req.report(output_format="json")
+
+        self.assertIsInstance(result, dict)
+        self.assertIn("packages", result)
+        self.assertIn("metadata", result)
+        self.assertEqual(len(result["packages"]), 2)
+
+    def test_report_json_package_structure(self):
+        """Test that JSON output has correct package structure"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+        ]
+
+        result = req.report(output_format="json")
+        pkg = result["packages"][0]
+
+        self.assertEqual(pkg["name"], "requests")
+        self.assertEqual(pkg["current_version"], "1.0.0")
+        self.assertEqual(pkg["latest_version"], "2.0.0")
+        self.assertTrue(pkg["has_update"])
+        self.assertEqual(pkg["version_change"], "major")
+
+    def test_report_json_metadata_structure(self):
+        """Test that JSON output has correct metadata structure"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+        ]
+
+        result = req.report(output_format="json")
+        metadata = result["metadata"]
+
+        self.assertEqual(metadata["requirements_file"], "requirements.txt")
+        self.assertEqual(metadata["total_packages"], 2)
+        self.assertEqual(metadata["packages_with_updates"], 1)
+
+    def test_report_json_filters_by_package(self):
+        """Test that JSON output respects ai_check_packages filter"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+        ]
+
+        result = req.report(ai_check_packages=["requests"], output_format="json")
+
+        self.assertEqual(len(result["packages"]), 1)
+        self.assertEqual(result["packages"][0]["name"], "requests")
+
+    def test_report_json_empty_updates(self):
+        """Test that JSON output handles no updates correctly"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "2.0.0"]]
+        req.updates = []
+
+        result = req.report(output_format="json")
+
+        self.assertEqual(len(result["packages"]), 0)
+        self.assertEqual(result["metadata"]["packages_with_updates"], 0)
+
+    def test_report_json_with_ai_provider_metadata(self):
+        """Test that JSON output includes AI provider info when available"""
+        mock_provider = Mock()
+        mock_provider.get_model_name.return_value = "claude-3-5-sonnet-20241022"
+
+        req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = []
+
+        result = req.report(output_format="json")
+
+        self.assertIn("ai_provider", result["metadata"])
+        self.assertIn("ai_model", result["metadata"])
+        self.assertEqual(result["metadata"]["ai_model"], "claude-3-5-sonnet-20241022")
+
+    @patch("requests.get")
+    def test_report_json_with_ai_analysis(self, mock_get):
+        """Test that JSON output includes AI analysis results"""
+        mock_provider = Mock()
+        mock_result = Mock()
+        mock_result.safety = "safe"
+        mock_result.confidence = "high"
+        mock_result.recommendations = ["Upgrade safely"]
+        mock_result.breaking_changes = []
+        mock_result.deprecations = []
+        mock_result.new_features = ["New feature"]
+        mock_result.summary = "Safe to upgrade"
+        mock_provider.analyze.return_value = mock_result
+        mock_provider.get_model_name.return_value = "claude-3-5-sonnet-20241022"
+
+        req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = [("requests", "1.0.0", "2.0.0", "major")]
+
+        result = req.report(ai_check_packages=["requests"], output_format="json")
+
+        pkg = result["packages"][0]
+        self.assertEqual(pkg["safety"], "safe")
+        self.assertEqual(pkg["confidence"], "high")
+        self.assertEqual(pkg["recommendations"], ["Upgrade safely"])
+        self.assertEqual(pkg["summary"], "Safe to upgrade")
 
 
 if __name__ == "__main__":
