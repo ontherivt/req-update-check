@@ -59,6 +59,11 @@ def main():
 
     args = parser.parse_args()
 
+    # Suppress logging early when JSON output requested to avoid contaminating stdout
+    json_output = args.output == "json"
+    if json_output:
+        logging.getLogger("req_update_check").setLevel(logging.CRITICAL)
+
     # Determine AI check mode
     ai_provider = None
     ai_check_packages = None
@@ -84,13 +89,8 @@ def main():
             sys.exit(1)
 
     # Handle caching setup
-    json_output = args.output == "json"
     if not args.no_cache and not json_output:
         logger.info("File caching enabled")
-
-    # Suppress logging when JSON output requested
-    if json_output:
-        logging.getLogger("req_update_check").setLevel(logging.CRITICAL)
 
     req = Requirements(
         args.requirements_file,

@@ -164,11 +164,8 @@ class Requirements:
             )
 
     def report(self, ai_check_packages: list[str] | None = None, output_format: str = "text"):
-        json_output = output_format == "json"
-        result = self._build_report_data(ai_check_packages, json_output)
-
-        if json_output:
-            return result
+        if output_format == "json":
+            return self._build_report_data(ai_check_packages)
 
         return self._report_text(ai_check_packages)
 
@@ -247,15 +244,13 @@ class Requirements:
             if analyzing_all and idx < total_packages - 1:
                 time.sleep(1)  # 1 second delay between packages
 
-    def _build_report_data(self, ai_check_packages: list[str] | None, include_ai: bool = False) -> dict:
+    def _build_report_data(self, ai_check_packages: list[str] | None) -> dict:
         """Build structured report data for JSON output."""
         packages_data = []
         analyzing_all = ai_check_packages == ["*"]
 
-        # Determine which packages to include
-        updates_to_process = self.updates
-        if ai_check_packages is not None and ai_check_packages != ["*"]:
-            updates_to_process = [pkg for pkg in self.updates if pkg[0] in ai_check_packages]
+        # Use shared filter logic
+        updates_to_process = self._filter_updates_for_json(ai_check_packages)
 
         for idx, package in enumerate(updates_to_process):
             package_name, current_version, latest_version, level = package
@@ -268,6 +263,13 @@ class Requirements:
                 "has_update": True,
                 "version_change": level,
             }
+
+            # Include package URLs for parity with text output
+            if links:
+                if links.get("homepage"):
+                    pkg_data["homepage_url"] = links["homepage"]
+                if links.get("changelog"):
+                    pkg_data["changelog_url"] = links["changelog"]
 
             # Add AI analysis if requested
             should_analyze = ai_check_packages is not None and (
@@ -305,7 +307,7 @@ class Requirements:
         metadata = {
             "requirements_file": self.path,
             "total_packages": len(self.packages) if self.packages else 0,
-            "packages_with_updates": len(self.updates),
+            "packages_with_updates": len(updates_to_process),
         }
 
         if self.ai_provider:
@@ -316,6 +318,13 @@ class Requirements:
             "packages": packages_data,
             "metadata": metadata,
         }
+
+    def _filter_updates_for_json(self, ai_check_packages: list[str] | None) -> list:
+        """Filter updates for JSON output. Returns empty list if no matches (no logging)."""
+        if ai_check_packages is None or ai_check_packages == ["*"]:
+            return self.updates
+
+        return [pkg for pkg in self.updates if pkg[0] in ai_check_packages]
 
     def get_package_info(self, package_name: str) -> dict:
         """Get package information using PyPI JSON API."""

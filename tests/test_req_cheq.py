@@ -1,4 +1,5 @@
 import importlib
+import json
 import sys
 import unittest
 from unittest.mock import Mock
@@ -280,10 +281,11 @@ class TestCLI(unittest.TestCase):
     @patch("src.req_update_check.cli.Requirements")
     def test_main_json_output(self, mock_requirements, mock_print):
         mock_instance = mock_requirements.return_value
-        mock_instance.report.return_value = {"packages": [], "metadata": {}}
+        expected_result = {"packages": [], "metadata": {}}
+        mock_instance.report.return_value = expected_result
         main()
         mock_instance.report.assert_called_once_with(ai_check_packages=None, output_format="json")
-        mock_print.assert_called_once()
+        mock_print.assert_called_once_with(json.dumps(expected_result, indent=2))
 
 
 class TestRequirementsWithAI(unittest.TestCase):
@@ -507,6 +509,8 @@ class TestJSONOutput(unittest.TestCase):
 
         self.assertEqual(len(result["packages"]), 1)
         self.assertEqual(result["packages"][0]["name"], "requests")
+        # packages_with_updates should reflect the filtered count
+        self.assertEqual(result["metadata"]["packages_with_updates"], 1)
 
     def test_report_json_empty_updates(self):
         """Test that JSON output handles no updates correctly"""
@@ -559,6 +563,9 @@ class TestJSONOutput(unittest.TestCase):
         self.assertEqual(pkg["safety"], "safe")
         self.assertEqual(pkg["confidence"], "high")
         self.assertEqual(pkg["recommendations"], ["Upgrade safely"])
+        self.assertEqual(pkg["breaking_changes"], [])
+        self.assertEqual(pkg["deprecations"], [])
+        self.assertEqual(pkg["new_features"], ["New feature"])
         self.assertEqual(pkg["summary"], "Safe to upgrade")
 
 
