@@ -163,11 +163,12 @@ class Requirements:
                 (package_name, package_version, latest_version, level),
             )
 
-    def report(self, ai_check_packages: list[str] | None = None, output_format: str = "text"):
+    def report(self, ai_check_packages: list[str] | None = None, output_format: str = "text") -> dict | None:
         if output_format == "json":
             return self._build_report_data(ai_check_packages)
 
-        return self._report_text(ai_check_packages)
+        self._report_text(ai_check_packages)
+        return None
 
     def _report_text(self, ai_check_packages: list[str] | None) -> None:
         """Output report in human-readable text format."""
@@ -188,14 +189,23 @@ class Requirements:
 
         return
 
-    def _filter_updates(self, ai_check_packages: list[str] | None) -> list | None:
-        """Filter updates based on ai_check_packages. Returns None if no matches found."""
+    def _filter_updates(self, ai_check_packages: list[str] | None, log_if_empty: bool = True) -> list | None:
+        """Filter updates based on ai_check_packages.
+
+        Args:
+            ai_check_packages: Package names to filter by, or None/"*" for all
+            log_if_empty: Whether to log a message when no packages match
+
+        Returns:
+            Filtered list of updates, or None if no matches found
+        """
         if ai_check_packages is None or ai_check_packages == ["*"]:
             return self.updates
 
         updates_to_show = [pkg for pkg in self.updates if pkg[0] in ai_check_packages]
         if not updates_to_show:
-            logger.info(f"No updates found for the specified package(s): {', '.join(ai_check_packages)}")
+            if log_if_empty:
+                logger.info(f"No updates found for the specified package(s): {', '.join(ai_check_packages)}")
             return None
         return updates_to_show
 
@@ -249,8 +259,8 @@ class Requirements:
         packages_data = []
         analyzing_all = ai_check_packages == ["*"]
 
-        # Use shared filter logic
-        updates_to_process = self._filter_updates_for_json(ai_check_packages)
+        # Use shared filter logic (no logging for JSON output)
+        updates_to_process = self._filter_updates(ai_check_packages, log_if_empty=False) or []
 
         for idx, package in enumerate(updates_to_process):
             package_name, current_version, latest_version, level = package
@@ -262,6 +272,7 @@ class Requirements:
                 "latest_version": latest_version,
                 "has_update": True,
                 "version_change": level,
+                "pypi_url": f"{self.pypi_package_base}{package_name}/",
             }
 
             # Include package URLs for parity with text output
@@ -294,6 +305,9 @@ class Requirements:
                             "deprecations": analysis.deprecations,
                             "new_features": analysis.new_features,
                             "summary": analysis.summary,
+                            "input_tokens": analysis.input_tokens,
+                            "output_tokens": analysis.output_tokens,
+                            "total_tokens": analysis.total_tokens,
                         }
                     )
 
@@ -318,13 +332,6 @@ class Requirements:
             "packages": packages_data,
             "metadata": metadata,
         }
-
-    def _filter_updates_for_json(self, ai_check_packages: list[str] | None) -> list:
-        """Filter updates for JSON output. Returns empty list if no matches (no logging)."""
-        if ai_check_packages is None or ai_check_packages == ["*"]:
-            return self.updates
-
-        return [pkg for pkg in self.updates if pkg[0] in ai_check_packages]
 
     def get_package_info(self, package_name: str) -> dict:
         """Get package information using PyPI JSON API."""

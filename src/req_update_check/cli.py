@@ -101,7 +101,8 @@ def main():
     req.check_packages()
     result = req.report(ai_check_packages=ai_check_packages, output_format=args.output)
 
-    if json_output and result:
+    # result is always a valid dict when json_output=True (never empty/falsy)
+    if json_output:
         print(json.dumps(result, indent=2))  # noqa: T201
 
 

@@ -536,6 +536,8 @@ class TestJSONOutput(unittest.TestCase):
 
         self.assertIn("ai_provider", result["metadata"])
         self.assertIn("ai_model", result["metadata"])
+        # Mock class name is "Mock", so ai_provider should be "mock"
+        self.assertEqual(result["metadata"]["ai_provider"], "mock")
         self.assertEqual(result["metadata"]["ai_model"], "claude-3-5-sonnet-20241022")
 
     @patch("requests.get")
@@ -550,6 +552,9 @@ class TestJSONOutput(unittest.TestCase):
         mock_result.deprecations = []
         mock_result.new_features = ["New feature"]
         mock_result.summary = "Safe to upgrade"
+        mock_result.input_tokens = 100
+        mock_result.output_tokens = 50
+        mock_result.total_tokens = 150
         mock_provider.analyze.return_value = mock_result
         mock_provider.get_model_name.return_value = "claude-3-5-sonnet-20241022"
 
@@ -567,6 +572,39 @@ class TestJSONOutput(unittest.TestCase):
         self.assertEqual(pkg["deprecations"], [])
         self.assertEqual(pkg["new_features"], ["New feature"])
         self.assertEqual(pkg["summary"], "Safe to upgrade")
+        # Verify token usage fields are included
+        self.assertIn("input_tokens", pkg)
+        self.assertIn("output_tokens", pkg)
+        self.assertIn("total_tokens", pkg)
+
+    def test_report_json_filter_excludes_all_packages(self):
+        """Test JSON output when filter matches no packages (but updates exist)"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+        ]
+
+        result = req.report(ai_check_packages=["nonexistent"], output_format="json")
+
+        # Should return empty packages array with zero count
+        self.assertEqual(len(result["packages"]), 0)
+        self.assertEqual(result["metadata"]["packages_with_updates"], 0)
+        # total_packages should still reflect actual count
+        self.assertEqual(result["metadata"]["total_packages"], 2)
+
+    def test_report_json_includes_pypi_url(self):
+        """Test that JSON output includes PyPI URL for each package"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = [("requests", "1.0.0", "2.0.0", "major")]
+
+        result = req.report(output_format="json")
+
+        pkg = result["packages"][0]
+        self.assertIn("pypi_url", pkg)
+        self.assertIn("requests", pkg["pypi_url"])
 
 
 if __name__ == "__main__":
