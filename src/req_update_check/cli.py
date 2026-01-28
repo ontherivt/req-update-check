@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 
@@ -48,7 +49,20 @@ def main():
         help="API key for AI provider (or set ANTHROPIC_API_KEY env var)",
     )
 
+    # Output format
+    parser.add_argument(
+        "--output",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text)",
+    )
+
     args = parser.parse_args()
+
+    # Suppress logging early when JSON output requested to avoid contaminating stdout
+    json_output = args.output == "json"
+    if json_output:
+        logging.getLogger("req_update_check").setLevel(logging.CRITICAL)
 
     # Determine AI check mode
     ai_provider = None
@@ -75,7 +89,7 @@ def main():
             sys.exit(1)
 
     # Handle caching setup
-    if not args.no_cache:
+    if not args.no_cache and not json_output:
         logger.info("File caching enabled")
 
     req = Requirements(
@@ -85,7 +99,11 @@ def main():
         ai_provider=ai_provider,
     )
     req.check_packages()
-    req.report(ai_check_packages=ai_check_packages)
+    result = req.report(ai_check_packages=ai_check_packages, output_format=args.output)
+
+    # result is always a valid dict when json_output=True (never empty/falsy)
+    if json_output:
+        print(json.dumps(result, indent=2))  # noqa: T201
 
 
 if __name__ == "__main__":

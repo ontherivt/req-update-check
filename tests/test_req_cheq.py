@@ -1,4 +1,5 @@
 import importlib
+import json
 import sys
 import unittest
 from unittest.mock import Mock
@@ -246,7 +247,7 @@ class TestCLI(unittest.TestCase):
             ai_provider=None,
         )
         mock_instance.check_packages.assert_called_once()
-        mock_instance.report.assert_called_once()
+        mock_instance.report.assert_called_once_with(ai_check_packages=None, output_format="text")
 
     @patch("sys.argv", ["req-check", "requirements.txt", "--no-cache"])
     @patch("builtins.print")
@@ -274,6 +275,34 @@ class TestCLI(unittest.TestCase):
             cache_dir="/custom/cache",
             ai_provider=None,
         )
+
+    @patch("sys.argv", ["req-check", "requirements.txt", "--output", "json"])
+    @patch("builtins.print")
+    @patch("src.req_update_check.cli.Requirements")
+    def test_main_json_output(self, mock_requirements, mock_print):
+        mock_instance = mock_requirements.return_value
+        expected_result = {"packages": [], "metadata": {}}
+        mock_instance.report.return_value = expected_result
+        main()
+        mock_instance.report.assert_called_once_with(ai_check_packages=None, output_format="json")
+        mock_print.assert_called_once_with(json.dumps(expected_result, indent=2))
+
+    @patch("sys.argv", ["req-check", "requirements.txt", "--output", "json", "--ai-check", "requests"])
+    @patch("builtins.print")
+    @patch("src.req_update_check.cli.Requirements")
+    @patch("src.req_update_check.cli.AIProviderFactory")
+    def test_main_json_output_with_ai_check(self, mock_factory, mock_requirements, mock_print):
+        """Test JSON output combined with AI analysis"""
+        mock_provider = Mock()
+        mock_provider.get_model_name.return_value = "claude-3-5-sonnet"
+        mock_factory.create.return_value = mock_provider
+
+        mock_instance = mock_requirements.return_value
+        expected_result = {"packages": [{"name": "requests", "safety": "safe"}], "metadata": {}}
+        mock_instance.report.return_value = expected_result
+        main()
+        mock_instance.report.assert_called_once_with(ai_check_packages=["requests"], output_format="json")
+        mock_print.assert_called_once_with(json.dumps(expected_result, indent=2))
 
 
 class TestRequirementsWithAI(unittest.TestCase):
@@ -431,6 +460,180 @@ class TestRequirementsWithAI(unittest.TestCase):
         req = Requirements("requirements.txt", allow_cache=False, ai_provider=None)
 
         self.assertIsNone(req.ai_analyzer)
+
+
+class TestJSONOutput(unittest.TestCase):
+    """Tests for JSON output format"""
+
+    def test_report_json_output_format(self):
+        """Test that report returns structured JSON data when output_format is json"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+        ]
+
+        result = req.report(output_format="json")
+
+        self.assertIsInstance(result, dict)
+        self.assertIn("packages", result)
+        self.assertIn("metadata", result)
+        self.assertEqual(len(result["packages"]), 2)
+
+    def test_report_json_package_structure(self):
+        """Test that JSON output has correct package structure"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+        ]
+
+        result = req.report(output_format="json")
+        pkg = result["packages"][0]
+
+        self.assertEqual(pkg["name"], "requests")
+        self.assertEqual(pkg["current_version"], "1.0.0")
+        self.assertEqual(pkg["latest_version"], "2.0.0")
+        self.assertTrue(pkg["has_update"])
+        self.assertEqual(pkg["version_change"], "major")
+
+    def test_report_json_metadata_structure(self):
+        """Test that JSON output has correct metadata structure"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+        ]
+
+        result = req.report(output_format="json")
+        metadata = result["metadata"]
+
+        self.assertEqual(metadata["requirements_file"], "requirements.txt")
+        self.assertEqual(metadata["total_packages"], 2)
+        self.assertEqual(metadata["packages_with_updates"], 1)
+
+    def test_report_json_filters_by_package(self):
+        """Test that JSON output respects ai_check_packages filter"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+        ]
+
+        result = req.report(ai_check_packages=["requests"], output_format="json")
+
+        self.assertEqual(len(result["packages"]), 1)
+        self.assertEqual(result["packages"][0]["name"], "requests")
+        # packages_with_updates should reflect the filtered count
+        self.assertEqual(result["metadata"]["packages_with_updates"], 1)
+
+    def test_report_json_empty_updates(self):
+        """Test that JSON output handles no updates correctly"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "2.0.0"]]
+        req.updates = []
+
+        result = req.report(output_format="json")
+
+        self.assertEqual(len(result["packages"]), 0)
+        self.assertEqual(result["metadata"]["packages_with_updates"], 0)
+
+    def test_report_json_with_ai_provider_metadata(self):
+        """Test that JSON output includes AI provider info when available"""
+        mock_provider = Mock()
+        mock_provider.get_model_name.return_value = "claude-3-5-sonnet-20241022"
+
+        req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = []
+
+        result = req.report(output_format="json")
+
+        self.assertIn("ai_provider", result["metadata"])
+        self.assertIn("ai_model", result["metadata"])
+        # Mock class name is "Mock", so ai_provider should be "mock"
+        self.assertEqual(result["metadata"]["ai_provider"], "mock")
+        self.assertEqual(result["metadata"]["ai_model"], "claude-3-5-sonnet-20241022")
+
+    @patch("requests.get")
+    def test_report_json_with_ai_analysis(self, mock_get):
+        """Test that JSON output includes AI analysis results"""
+        mock_provider = Mock()
+        mock_result = Mock()
+        mock_result.safety = "safe"
+        mock_result.confidence = "high"
+        mock_result.recommendations = ["Upgrade safely"]
+        mock_result.breaking_changes = []
+        mock_result.deprecations = []
+        mock_result.new_features = ["New feature"]
+        mock_result.summary = "Safe to upgrade"
+        mock_result.input_tokens = 100
+        mock_result.output_tokens = 50
+        mock_result.total_tokens = 150
+        mock_provider.analyze.return_value = mock_result
+        mock_provider.get_model_name.return_value = "claude-3-5-sonnet-20241022"
+
+        req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = [("requests", "1.0.0", "2.0.0", "major")]
+
+        result = req.report(ai_check_packages=["requests"], output_format="json")
+
+        pkg = result["packages"][0]
+        self.assertEqual(pkg["safety"], "safe")
+        self.assertEqual(pkg["confidence"], "high")
+        self.assertEqual(pkg["recommendations"], ["Upgrade safely"])
+        self.assertEqual(pkg["breaking_changes"], [])
+        self.assertEqual(pkg["deprecations"], [])
+        self.assertEqual(pkg["new_features"], ["New feature"])
+        self.assertEqual(pkg["summary"], "Safe to upgrade")
+        # Verify token usage fields are included
+        self.assertIn("input_tokens", pkg)
+        self.assertIn("output_tokens", pkg)
+        self.assertIn("total_tokens", pkg)
+
+    def test_report_json_filter_excludes_all_packages(self):
+        """Test JSON output when filter matches no packages (but updates exist)"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.updates = [
+            ("requests", "1.0.0", "2.0.0", "major"),
+            ("flask", "1.0.0", "1.5.0", "minor"),
+        ]
+
+        result = req.report(ai_check_packages=["nonexistent"], output_format="json")
+
+        # Should return empty packages array with zero count
+        self.assertEqual(len(result["packages"]), 0)
+        self.assertEqual(result["metadata"]["packages_with_updates"], 0)
+        # total_packages should still reflect actual count
+        self.assertEqual(result["metadata"]["total_packages"], 2)
+
+    def test_report_json_includes_pypi_url(self):
+        """Test that JSON output includes PyPI URL for each package"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = [("requests", "1.0.0", "2.0.0", "major")]
+
+        result = req.report(output_format="json")
+
+        pkg = result["packages"][0]
+        self.assertIn("pypi_url", pkg)
+        self.assertIn("requests", pkg["pypi_url"])
+
+    def test_report_invalid_output_format_raises_error(self):
+        """Test that invalid output_format raises ValueError"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = []
+
+        with self.assertRaises(ValueError) as cm:
+            req.report(output_format="xml")
+
+        self.assertIn("Invalid output_format", str(cm.exception))
+        self.assertIn("xml", str(cm.exception))
 
 
 if __name__ == "__main__":
