@@ -213,3 +213,24 @@ req-update-check requirements.txt --ai-check --ai-provider gemini
 ## Version Support
 - Python 3.9+ required
 - pyproject.toml parsing requires Python 3.11+ (tomllib)
+
+## Commit Message Convention
+
+**IMPORTANT:** This project uses Release Please for automated releases. All commits MUST follow [Conventional Commits](https://www.conventionalcommits.org/) format for proper changelog generation and version bumping.
+
+Format: `<type>[optional scope]: <description>`
+
+Types and their effects:
+- `feat:` → New feature (minor version bump, e.g., 0.2.0 → 0.3.0)
+- `fix:` → Bug fix (patch version bump, e.g., 0.2.0 → 0.2.1)
+- `docs:` → Documentation changes (no version bump)
+- `chore:` → Maintenance tasks (no version bump)
+- `refactor:` → Code refactoring (no version bump)
+- `test:` → Test changes (no version bump)
+- `ci:` → CI/CD changes (no version bump)
+
+Breaking changes (major version bump):
+- `feat!: breaking API change`
+- Or include `BREAKING CHANGE:` in the commit body
+
+See `DEVELOPER.md` for full release process documentation.
