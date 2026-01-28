@@ -70,7 +70,7 @@ class Requirements:
         res = requests.get(self.pypi_index, headers=self.headers, timeout=10)
         package_index = res.json()["projects"]
         for package in package_index:
-            self.package_index.add(package["name"])
+            self.package_index.add(package["name"].lower())
 
         if self.cache:
             self.cache.set("package-index", list(self.package_index))
@@ -118,18 +118,19 @@ class Requirements:
         return packages
 
     def get_latest_version(self, package_name):
+        normalized_name = package_name.lower()
         if self.allow_cache and self.cache:
-            latest_version = self.cache.get(f"package:{package_name}")
+            latest_version = self.cache.get(f"package:{normalized_name}")
             if latest_version:
                 return latest_version
 
-        res = requests.get(f"{self.pypi_index}{package_name}/", headers=self.headers, timeout=10)
+        res = requests.get(f"{self.pypi_index}{normalized_name}/", headers=self.headers, timeout=10)
         versions = res.json()["versions"]
         # start from the end and find the first version that is not a pre-release
         for version in reversed(versions):
             if not any(x in version for x in ["a", "b", "rc"]):
                 if self.cache:
-                    self.cache.set(f"package:{package_name}", version)
+                    self.cache.set(f"package:{normalized_name}", version)
                 return version
         return None
 
@@ -150,8 +151,8 @@ class Requirements:
             package_name, optional_deps = package_name.split("[")
             logger.info(f"Skipping optional packages '{optional_deps.replace(']', '')}' from {package_name}")
 
-        # check if package is in the index
-        if package_name not in self.package_index:
+        # check if package is in the index (case-insensitive)
+        if package_name.lower() not in self.package_index:
             msg = f"Package {package_name} not found in the index."
             logger.info(msg)
             return
@@ -351,13 +352,14 @@ class Requirements:
 
     def get_package_info(self, package_name: str) -> dict:
         """Get package information using PyPI JSON API."""
+        normalized_name = package_name.lower()
         if self.allow_cache and self.cache:
-            info = self.cache.get(f"package-info:{package_name}")
+            info = self.cache.get(f"package-info:{normalized_name}")
             if info:
                 return info
 
         try:
-            res = requests.get(f"{self.pypi_json_api}{package_name}/json", timeout=10)
+            res = requests.get(f"{self.pypi_json_api}{normalized_name}/json", timeout=10)
             res.raise_for_status()
             data = res.json()
 
@@ -378,7 +380,7 @@ class Requirements:
                     break
 
             if self.cache:
-                self.cache.set(f"package-info:{package_name}", info)
+                self.cache.set(f"package-info:{normalized_name}", info)
         except (requests.RequestException, KeyError, ValueError):
             return {}
         else:
