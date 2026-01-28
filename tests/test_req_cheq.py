@@ -636,5 +636,107 @@ class TestJSONOutput(unittest.TestCase):
         self.assertIn("xml", str(cm.exception))
 
 
+class TestCaseSensitivity(unittest.TestCase):
+    """Tests for case-insensitive package name handling (PEP 503)"""
+
+    def test_get_index_stores_lowercase_names(self):
+        """Test that package names are stored as lowercase in the index"""
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "projects": [
+                {"name": "Django"},
+                {"name": "Flask"},
+                {"name": "Requests"},
+            ],
+        }
+
+        with patch("requests.get", return_value=mock_response):
+            req = Requirements("requirements.txt", allow_cache=False)
+            req.get_index()
+
+        # All names should be stored as lowercase
+        self.assertIn("django", req.package_index)
+        self.assertIn("flask", req.package_index)
+        self.assertIn("requests", req.package_index)
+        # Uppercase versions should not be in the index
+        self.assertNotIn("Django", req.package_index)
+        self.assertNotIn("Flask", req.package_index)
+        self.assertNotIn("Requests", req.package_index)
+
+    def test_check_package_finds_lowercase_in_uppercase_index(self):
+        """Test that lowercase package names match uppercase index entries"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.package_index = {"django", "flask"}  # lowercase stored
+
+        with patch.object(req, "get_latest_version", return_value="4.2.0"):
+            req.check_package(["django", "4.0.0"])
+
+        # Should find the package and add to updates
+        self.assertEqual(len(req.updates), 1)
+        self.assertEqual(req.updates[0][0], "django")
+
+    def test_check_package_finds_uppercase_in_lowercase_index(self):
+        """Test that uppercase package names match lowercase index entries"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.package_index = {"django", "flask"}  # lowercase stored
+
+        with patch.object(req, "get_latest_version", return_value="4.2.0"):
+            req.check_package(["Django", "4.0.0"])
+
+        # Should find the package and add to updates
+        self.assertEqual(len(req.updates), 1)
+        self.assertEqual(req.updates[0][0], "Django")
+
+    def test_check_package_mixed_case_variations(self):
+        """Test that mixed case package names work correctly"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.package_index = {"django", "flask", "numpy"}
+
+        test_cases = [
+            ["DJANGO", "4.0.0"],
+            ["DjAnGo", "4.0.0"],
+            ["dJaNgO", "4.0.0"],
+        ]
+
+        with patch.object(req, "get_latest_version", return_value="4.2.0"):
+            for package in test_cases:
+                req.updates = []  # Reset for each test
+                req.check_package(package)
+                self.assertEqual(len(req.updates), 1, f"Failed for case: {package[0]}")
+
+    @patch("requests.get")
+    def test_get_latest_version_uses_lowercase_url(self, mock_get):
+        """Test that get_latest_version uses lowercase in API URL"""
+        mock_response = Mock()
+        mock_response.json.return_value = {"versions": ["4.2.0"]}
+        mock_get.return_value = mock_response
+
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.get_latest_version("Django")
+
+        # Verify the API was called with lowercase package name
+        call_url = mock_get.call_args[0][0]
+        self.assertIn("django", call_url.lower())
+        self.assertNotIn("Django", call_url)
+
+    @patch("requests.get")
+    def test_get_package_info_uses_lowercase_url(self, mock_get):
+        """Test that get_package_info uses lowercase in API URL"""
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "info": {"home_page": "https://example.com", "project_urls": {}},
+        }
+        mock_response.raise_for_status = Mock()
+        mock_get.return_value = mock_response
+
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.get_package_info("Django")
+
+        # Verify the API was called with lowercase package name
+        call_url = mock_get.call_args[0][0]
+        self.assertIn("django", call_url.lower())
+        self.assertNotIn("Django", call_url)
+
+
 if __name__ == "__main__":
     unittest.main()
