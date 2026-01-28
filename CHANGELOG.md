@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/ontherivt/req-update-check/compare/v0.5.1...v0.5.2) (2026-01-28)
+
+
+### Bug Fixes
+
+* inline PyPI publish steps to fix trusted publishing ([#43](https://github.com/ontherivt/req-update-check/issues/43)) ([d351a2e](https://github.com/ontherivt/req-update-check/commit/d351a2e06197aad9e3a833df16b9b6c0763dccc9))
+
 ## [0.5.1](https://github.com/ontherivt/req-update-check/compare/v0.5.0...v0.5.1) (2026-01-28)
 
 
