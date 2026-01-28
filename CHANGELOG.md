@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/ontherivt/req-update-check/compare/v0.5.0...v0.5.1) (2026-01-28)
+
+
+### Bug Fixes
+
+* add id-token permission for PyPI trusted publishing ([#41](https://github.com/ontherivt/req-update-check/issues/41)) ([eec02e0](https://github.com/ontherivt/req-update-check/commit/eec02e0ed1068bdf68fe46a8effab599a02ed4fc))
+* trigger PyPI publish from release-please workflow ([#40](https://github.com/ontherivt/req-update-check/issues/40)) ([f57dfc1](https://github.com/ontherivt/req-update-check/commit/f57dfc1b1b11bd53d8461757426b7b20b96bafb0))
+
 ## [0.5.0](https://github.com/ontherivt/req-update-check/compare/v0.4.2...v0.5.0) (2026-01-28)
 
 
