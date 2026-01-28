@@ -287,6 +287,23 @@ class TestCLI(unittest.TestCase):
         mock_instance.report.assert_called_once_with(ai_check_packages=None, output_format="json")
         mock_print.assert_called_once_with(json.dumps(expected_result, indent=2))
 
+    @patch("sys.argv", ["req-check", "requirements.txt", "--output", "json", "--ai-check", "requests"])
+    @patch("builtins.print")
+    @patch("src.req_update_check.cli.Requirements")
+    @patch("src.req_update_check.cli.AIProviderFactory")
+    def test_main_json_output_with_ai_check(self, mock_factory, mock_requirements, mock_print):
+        """Test JSON output combined with AI analysis"""
+        mock_provider = Mock()
+        mock_provider.get_model_name.return_value = "claude-3-5-sonnet"
+        mock_factory.create.return_value = mock_provider
+
+        mock_instance = mock_requirements.return_value
+        expected_result = {"packages": [{"name": "requests", "safety": "safe"}], "metadata": {}}
+        mock_instance.report.return_value = expected_result
+        main()
+        mock_instance.report.assert_called_once_with(ai_check_packages=["requests"], output_format="json")
+        mock_print.assert_called_once_with(json.dumps(expected_result, indent=2))
+
 
 class TestRequirementsWithAI(unittest.TestCase):
     """Tests for Requirements with AI analyzer integration"""
@@ -605,6 +622,18 @@ class TestJSONOutput(unittest.TestCase):
         pkg = result["packages"][0]
         self.assertIn("pypi_url", pkg)
         self.assertIn("requests", pkg["pypi_url"])
+
+    def test_report_invalid_output_format_raises_error(self):
+        """Test that invalid output_format raises ValueError"""
+        req = Requirements("requirements.txt", allow_cache=False)
+        req.packages = [["requests", "1.0.0"]]
+        req.updates = []
+
+        with self.assertRaises(ValueError) as cm:
+            req.report(output_format="xml")
+
+        self.assertIn("Invalid output_format", str(cm.exception))
+        self.assertIn("xml", str(cm.exception))
 
 
 if __name__ == "__main__":

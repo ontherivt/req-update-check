@@ -164,6 +164,22 @@ class Requirements:
             )
 
     def report(self, ai_check_packages: list[str] | None = None, output_format: str = "text") -> dict | None:
+        """Generate update report in specified format.
+
+        Args:
+            ai_check_packages: Package names to analyze with AI, or ["*"] for all
+            output_format: Either "json" for structured data or "text" for console output
+
+        Returns:
+            dict with packages and metadata when output_format="json", None for text output
+
+        Raises:
+            ValueError: If output_format is not "json" or "text"
+        """
+        if output_format not in ("json", "text"):
+            msg = f"Invalid output_format '{output_format}'. Must be 'json' or 'text'."
+            raise ValueError(msg)
+
         if output_format == "json":
             return self._build_report_data(ai_check_packages)
 
@@ -224,7 +240,7 @@ class Requirements:
 
         package_name, current_version, latest_version, level = package
         msg = f"{package_name}: {current_version} -> {latest_version} [{level}]"
-        msg += f"\n\tPypi page: {self.pypi_package_base}{package_name}/"
+        msg += f"\n\tPyPI page: {self.pypi_package_base}{package_name}/"
         links = self.get_package_info(package_name)
         if links:
             if links.get("homepage"):
