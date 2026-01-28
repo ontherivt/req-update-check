@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/ontherivt/req-update-check/compare/v0.4.2...v0.5.0) (2026-01-28)
+
+
+### Features
+
+* add --output json flag for structured JSON output ([#37](https://github.com/ontherivt/req-update-check/issues/37)) ([b1075bc](https://github.com/ontherivt/req-update-check/commit/b1075bcaf529d6a055e1229672d8c18ee6028f36))
+
+
+### Bug Fixes
+
+* normalize package names to lowercase for case-insensitive lookup ([#39](https://github.com/ontherivt/req-update-check/issues/39)) ([51ee5fd](https://github.com/ontherivt/req-update-check/commit/51ee5fd3a18f99b7e6c37ce89792a389a9242148))
+
 ## [0.4.2](https://github.com/ontherivt/req-update-check/compare/v0.4.1...v0.4.2) (2025-11-12)
 
 
