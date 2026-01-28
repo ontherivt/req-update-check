@@ -5,7 +5,6 @@
 
 ### Features
 
-* add --output json flag for structured JSON output ([b1075bc](https://github.com/ontherivt/req-update-check/commit/b1075bcaf529d6a055e1229672d8c18ee6028f36))
 * add --output json flag for structured JSON output ([#37](https://github.com/ontherivt/req-update-check/issues/37)) ([b1075bc](https://github.com/ontherivt/req-update-check/commit/b1075bcaf529d6a055e1229672d8c18ee6028f36))
 
 
