@@ -19,5 +19,9 @@ jobs:
       - uses: googleapis/release-please-action@v4.3.0
         id: release
         with:
-          # This tells release-please to look for a Python project
           release-type: python
+
+  publish:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    uses: ./.github/workflows/release.yml
