@@ -8,8 +8,8 @@ from req_update_check.exceptions import AIProviderError
 
 try:
     import anthropic  # noqa: F401
-    import google.generativeai  # noqa: F401
     import openai  # noqa: F401
+    from google import genai  # noqa: F401
 
     optional_imports_installed = True
 except ImportError:
@@ -53,12 +53,12 @@ class TestAIProviderImportErrors(unittest.TestCase):
         self.assertIn("pip install 'req-update-check[ai]'", error_msg)
         self.assertIn("pip install openai", error_msg)
 
-    def test_gemini_provider_missing_google_generativeai_package(self):
-        """Test GeminiProvider raises proper error when google-generativeai package is missing"""
+    def test_gemini_provider_missing_google_genai_package(self):
+        """Test GeminiProvider raises proper error when google-genai package is missing"""
         with self.assertRaises(AIProviderError) as context:
             GeminiProvider(api_key="test-key")
 
         error_msg = str(context.exception)
-        self.assertIn("google-generativeai package not installed", error_msg)
+        self.assertIn("google-genai package not installed", error_msg)
         self.assertIn("pip install 'req-update-check[ai]'", error_msg)
-        self.assertIn("pip install google-generativeai", error_msg)
+        self.assertIn("pip install google-genai", error_msg)
