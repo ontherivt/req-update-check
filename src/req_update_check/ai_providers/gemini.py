@@ -8,10 +8,12 @@ from .base import AIProvider
 from .base import AnalysisResult
 
 genai = None
+genai_types = None
 genai_import_error = None
 
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types as genai_types
 except ImportError as e:
     genai_import_error = str(e)
 except Exception as e:  # noqa: BLE001
@@ -23,7 +25,7 @@ logger = logging.getLogger("req_update_check")
 class GeminiProvider(AIProvider):
     """Google Gemini API provider"""
 
-    DEFAULT_MODEL = "gemini-2.0-flash-exp"
+    DEFAULT_MODEL = "gemini-2.0-flash"
 
     def __init__(self, api_key: str, model: str | None = None):
         """
@@ -36,28 +38,19 @@ class GeminiProvider(AIProvider):
         if genai is None:
             if genai_import_error and "No module named" in genai_import_error:
                 msg = (
-                    "google-generativeai package not installed. "
-                    "Install with: pip install 'req-update-check[ai]' or pip install google-generativeai"
+                    "google-genai package not installed. "
+                    "Install with: pip install 'req-update-check[ai]' or pip install google-genai"
                 )
             else:
                 msg = (
-                    f"google-generativeai package import failed: {genai_import_error}. "
+                    f"google-genai package import failed: {genai_import_error}. "
                     "This may be due to a broken dependency. Try reinstalling: "
-                    "pip install --force-reinstall google-generativeai"
+                    "pip install --force-reinstall google-genai"
                 )
             raise AIProviderError(msg)
 
-        genai.configure(api_key=api_key)
         self.model_name = model or self.DEFAULT_MODEL
-
-        # Create model with JSON response format
-        self.client = genai.GenerativeModel(
-            model_name=self.model_name,
-            generation_config={
-                "temperature": 0,
-                "response_mime_type": "application/json",
-            },
-        )
+        self.client = genai.Client(api_key=api_key)
 
         logger.debug(f"Initialized Gemini provider with model: {self.model_name}")
 
@@ -79,7 +72,19 @@ class GeminiProvider(AIProvider):
             # (Gemini doesn't have separate system/user messages in the same way)
             full_prompt = f"{self._get_system_prompt()}\n\n{prompt}"
 
-            response = self._retry_with_backoff(lambda: self.client.generate_content(full_prompt))
+            # Configure generation settings
+            config = genai_types.GenerateContentConfig(
+                temperature=0,
+                response_mime_type="application/json",
+            )
+
+            response = self._retry_with_backoff(
+                lambda: self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=full_prompt,
+                    config=config,
+                )
+            )
 
             # Extract text from response
             response_text = response.text
@@ -88,9 +93,9 @@ class GeminiProvider(AIProvider):
             # Extract token usage from response
             input_tokens = 0
             output_tokens = 0
-            if hasattr(response, "usage_metadata"):
-                input_tokens = getattr(response.usage_metadata, "prompt_token_count", 0)
-                output_tokens = getattr(response.usage_metadata, "candidates_token_count", 0)
+            if hasattr(response, "usage_metadata") and response.usage_metadata:
+                input_tokens = getattr(response.usage_metadata, "prompt_token_count", 0) or 0
+                output_tokens = getattr(response.usage_metadata, "candidates_token_count", 0) or 0
 
             logger.debug(f"Token usage - Input: {input_tokens}, Output: {output_tokens}")
 
