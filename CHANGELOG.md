@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/ontherivt/req-update-check/compare/v0.5.2...v0.6.0) (2026-01-29)
+
+
+### Features
+
+* update Gemini provider to use new google-genai SDK ([#45](https://github.com/ontherivt/req-update-check/issues/45)) ([a7e9802](https://github.com/ontherivt/req-update-check/commit/a7e980240035b593d503e8d97b9714ffaffe2aec))
+
 ## [0.5.2](https://github.com/ontherivt/req-update-check/compare/v0.5.1...v0.5.2) (2026-01-28)
 
 
