@@ -50,18 +50,38 @@ requests==2.26.0
 flask==2.0.1
 # comment line
 pytest==6.2.4  # inline comment
+
+package-without-version-specification
+compatible-package ~= 1.1
+greater-package> 2.2
+lesser-equal-package <=3.3
+greater-equal-package  >=    4.4    # inline comment with == in it
+lesser-package<5.5
+not-equal-package!=6.6
+arbitrary-equal-package===7.7
+
 """
         self.toml_content = """
 [project]
 dependencies = [
     "requests==2.26.0",
     "flask==2.0.1",
+    "package-without-version-specification",
+    "compatible-package ~= 1.1",
+    "not-equal-package!=6.6",
+    "arbitrary-equal-package  ===   7.7",
+
 ]
 
 [dependency-groups]
 group1 = ["pytest==6.2.4"]
 group2 = ["numpy==1.21.0"]
-
+other_comparison_group = [
+    "greater-package> 2.2",
+    "lesser-equal-package <=3.3",
+    "greater-equal-package  >=    4.4",    # inline comment with == in it
+    "lesser-package<5.5",
+]
 """
 
         self.mock_index = {
@@ -84,9 +104,17 @@ group2 = ["numpy==1.21.0"]
         req = Requirements("requirements.txt", allow_cache=False)
         req.check_packages()
         expected = [
-            ["requests", "2.26.0"],
-            ["flask", "2.0.1"],
-            ["pytest", "6.2.4"],
+            ("requests", "==", "2.26.0"),
+            ("flask", "==", "2.0.1"),
+            ("pytest", "==", "6.2.4"),
+            ('compatible-package', '~=', '1.1'),
+            ('greater-package', '>', '2.2'),
+            ('lesser-equal-package', '<=', '3.3'),
+            ('greater-equal-package', '>=', '4.4'),
+            ('lesser-package', '<', '5.5'),
+            # "!=" comparison operator is excluded
+            # corrupted result if "===" is actually used
+            ('arbitrary-equal-package', '==', '=7.7')
         ]
         self.assertEqual(req.packages, expected)
 
@@ -98,10 +126,18 @@ group2 = ["numpy==1.21.0"]
         req = Requirements("pyproject.toml", allow_cache=False)
         req.check_packages()
         expected = [
-            ["requests", "2.26.0"],
-            ["flask", "2.0.1"],
-            ["pytest", "6.2.4"],
-            ["numpy", "1.21.0"],
+            ("requests", "==", "2.26.0"),
+            ("flask", "==", "2.0.1"),
+            ('compatible-package', '~=', '1.1'),
+            # "!=" comparison operator is excluded
+            # corrupted result if "===" is actually used
+            ('arbitrary-equal-package', '==', '=7.7'),
+            ("pytest", "==", "6.2.4"),
+            ("numpy", "==", "1.21.0"),
+            ('greater-package', '>', '2.2'),
+            ('lesser-equal-package', '<=', '3.3'),
+            ('greater-equal-package', '>=', '4.4'),
+            ('lesser-package', '<', '5.5'),
         ]
         self.assertEqual(req.packages, expected)
 
@@ -154,12 +190,12 @@ group2 = ["numpy==1.21.0"]
             self.assertEqual(req.check_major_minor("1.0.0", "1.0.1"), "patch")
 
     def test_optional_dependencies(self):
-        package = ["psycopg2[binary]", "2.9.1"]
+        package = ("psycopg2[binary]", "==", "2.9.1")
         with self.assertLogs("req_update_check", level="INFO") as cm:
             self.requirements.check_package(package)
         self.assertIn("Skipping optional packages 'binary' from psycopg2", cm.output[0])
 
-        package = ["psycopg2", "2.9.1"]
+        package = ("psycopg2", "==", "2.9.1")
         with self.assertLogs("req_update_check", level="INFO") as cm:
             self.requirements.check_package(package)
 
@@ -468,7 +504,7 @@ class TestJSONOutput(unittest.TestCase):
     def test_report_json_output_format(self):
         """Test that report returns structured JSON data when output_format is json"""
         req = Requirements("requirements.txt", allow_cache=False)
-        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0"), ("flask", "==", "1.0.0")]
         req.updates = [
             ("requests", "1.0.0", "2.0.0", "major"),
             ("flask", "1.0.0", "1.5.0", "minor"),
@@ -484,7 +520,7 @@ class TestJSONOutput(unittest.TestCase):
     def test_report_json_package_structure(self):
         """Test that JSON output has correct package structure"""
         req = Requirements("requirements.txt", allow_cache=False)
-        req.packages = [["requests", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0")]
         req.updates = [
             ("requests", "1.0.0", "2.0.0", "major"),
         ]
@@ -501,7 +537,7 @@ class TestJSONOutput(unittest.TestCase):
     def test_report_json_metadata_structure(self):
         """Test that JSON output has correct metadata structure"""
         req = Requirements("requirements.txt", allow_cache=False)
-        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0"), ("flask", "==", "1.0.0")]
         req.updates = [
             ("requests", "1.0.0", "2.0.0", "major"),
         ]
@@ -516,7 +552,7 @@ class TestJSONOutput(unittest.TestCase):
     def test_report_json_filters_by_package(self):
         """Test that JSON output respects ai_check_packages filter"""
         req = Requirements("requirements.txt", allow_cache=False)
-        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0"), ("flask", "==", "1.0.0")]
         req.updates = [
             ("requests", "1.0.0", "2.0.0", "major"),
             ("flask", "1.0.0", "1.5.0", "minor"),
@@ -532,7 +568,7 @@ class TestJSONOutput(unittest.TestCase):
     def test_report_json_empty_updates(self):
         """Test that JSON output handles no updates correctly"""
         req = Requirements("requirements.txt", allow_cache=False)
-        req.packages = [["requests", "2.0.0"]]
+        req.packages = [("requests", "==", "2.0.0")]
         req.updates = []
 
         result = req.report(output_format="json")
@@ -546,7 +582,7 @@ class TestJSONOutput(unittest.TestCase):
         mock_provider.get_model_name.return_value = "claude-3-5-sonnet-20241022"
 
         req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
-        req.packages = [["requests", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0")]
         req.updates = []
 
         result = req.report(output_format="json")
@@ -576,7 +612,7 @@ class TestJSONOutput(unittest.TestCase):
         mock_provider.get_model_name.return_value = "claude-3-5-sonnet-20241022"
 
         req = Requirements("requirements.txt", allow_cache=False, ai_provider=mock_provider)
-        req.packages = [["requests", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0")]
         req.updates = [("requests", "1.0.0", "2.0.0", "major")]
 
         result = req.report(ai_check_packages=["requests"], output_format="json")
@@ -597,7 +633,7 @@ class TestJSONOutput(unittest.TestCase):
     def test_report_json_filter_excludes_all_packages(self):
         """Test JSON output when filter matches no packages (but updates exist)"""
         req = Requirements("requirements.txt", allow_cache=False)
-        req.packages = [["requests", "1.0.0"], ["flask", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0"), ("flask", "==", "1.0.0")]
         req.updates = [
             ("requests", "1.0.0", "2.0.0", "major"),
             ("flask", "1.0.0", "1.5.0", "minor"),
@@ -614,7 +650,7 @@ class TestJSONOutput(unittest.TestCase):
     def test_report_json_includes_pypi_url(self):
         """Test that JSON output includes PyPI URL for each package"""
         req = Requirements("requirements.txt", allow_cache=False)
-        req.packages = [["requests", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0")]
         req.updates = [("requests", "1.0.0", "2.0.0", "major")]
 
         result = req.report(output_format="json")
@@ -626,7 +662,7 @@ class TestJSONOutput(unittest.TestCase):
     def test_report_invalid_output_format_raises_error(self):
         """Test that invalid output_format raises ValueError"""
         req = Requirements("requirements.txt", allow_cache=False)
-        req.packages = [["requests", "1.0.0"]]
+        req.packages = [("requests", "==", "1.0.0")]
         req.updates = []
 
         with self.assertRaises(ValueError) as cm:
@@ -669,7 +705,7 @@ class TestCaseSensitivity(unittest.TestCase):
         req.package_index = {"django", "flask"}  # lowercase stored
 
         with patch.object(req, "get_latest_version", return_value="4.2.0"):
-            req.check_package(["django", "4.0.0"])
+            req.check_package(("django", "==", "4.0.0"))
 
         # Should find the package and add to updates
         self.assertEqual(len(req.updates), 1)
@@ -681,7 +717,7 @@ class TestCaseSensitivity(unittest.TestCase):
         req.package_index = {"django", "flask"}  # lowercase stored
 
         with patch.object(req, "get_latest_version", return_value="4.2.0"):
-            req.check_package(["Django", "4.0.0"])
+            req.check_package(("Django", "==", "4.0.0"))
 
         # Should find the package and add to updates
         self.assertEqual(len(req.updates), 1)
@@ -693,9 +729,9 @@ class TestCaseSensitivity(unittest.TestCase):
         req.package_index = {"django", "flask", "numpy"}
 
         test_cases = [
-            ["DJANGO", "4.0.0"],
-            ["DjAnGo", "4.0.0"],
-            ["dJaNgO", "4.0.0"],
+            ("DJANGO", "==", "4.0.0"),
+            ("DjAnGo", "==", "4.0.0"),
+            ("dJaNgO", "==", "4.0.0"),
         ]
 
         with patch.object(req, "get_latest_version", return_value="4.2.0"):
