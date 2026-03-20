@@ -102,7 +102,7 @@ _Note: pyproject.toml support requires Python 3.11+_
 **Basic output:**
 ```
 File caching enabled
-The following packages need to be updated:
+The following packages have a later version:
 
 requests: 2.28.0 -> 2.31.0 [minor]
     Pypi page: https://pypi.python.org/project/requests/
@@ -113,7 +113,7 @@ requests: 2.28.0 -> 2.31.0 [minor]
 **With AI analysis:**
 ```
 File caching enabled
-The following packages need to be updated:
+The following packages have a later version:
 
 requests: 2.28.0 -> 2.32.5 [minor]
     Pypi page: https://pypi.python.org/project/requests/
@@ -218,12 +218,13 @@ req-update-check --cache-dir ~/.your-cache-dir requirements.txt
 The tool supports requirements.txt files with the following formats:
 ```
 package==1.2.3
-package == 1.2.3  # with spaces
-package==1.2.3  # with inline comments
+package ~= 1.2  # with spaces
+package>=1.2.3  # with inline comments
 # Full line comments
 ```
 
-Note: Currently only supports exact version specifiers (`==`). Support for other specifiers (like `>=`, `~=`) is planned for future releases.
+Note: Version specifiers with the version exclusion clause (`!=`) are ignored. Use of the arbitrary 
+equality clause (`===`) or a combination of version clauses is not supported.
 
 ## Python API
 

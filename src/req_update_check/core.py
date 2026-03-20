@@ -107,12 +107,21 @@ class Requirements:
             sys.exit(1)
 
         packages = []
-        for req in requirements:
-            if req.startswith("#") or req in ["", "\n"]:
+        # Deliberately exclude "!=" and "===". Keep in mind that
+        # result will be corrupted if "===" is actually used.
+        comparison_operators = ["==", "~=", "<=", ">=", "<", ">"]
+        for req_line in requirements:
+            if req_line.startswith("#") or req_line in ["", "\n"]:
                 continue
-            # remove inline comments
-            req_ = req.split("#")[0]
-            packages.append(req_.strip().split("=="))
+            # remove inline comments and spaces
+            req_line_clean = req_line.split("#")[0].replace(" ", "")
+            for operator in comparison_operators:
+                if operator in req_line_clean:
+                    # This only works for a single version clause. Will
+                    # lead to errors if multiple comma-separated clauses
+                    # are used.
+                    packages.append(req_line_clean.partition(operator))
+                    break
 
         self.packages = packages
         return packages
@@ -139,12 +148,10 @@ class Requirements:
         for package in self.packages:
             self.check_package(package)
 
-    def check_package(self, package: list[str, str]):
-        expected_length = 2
-        if len(package) == expected_length:
-            package_name, package_version = package
-        else:
-            return
+    def check_package(self, package: tuple[str, str, str]):
+        # Middle variable is for comparison operator, but that is not
+        # (yet) being used.
+        package_name, _, package_version = package
 
         # check for optional dependencies
         if "[" in package_name:
@@ -198,7 +205,7 @@ class Requirements:
         if updates_to_show is None:
             return
 
-        logger.info("The following packages need to be updated:\n")
+        logger.info("The following packages have a later version:\n")
         analyzing_all = ai_check_packages == ["*"]
 
         for idx, package in enumerate(updates_to_show):
